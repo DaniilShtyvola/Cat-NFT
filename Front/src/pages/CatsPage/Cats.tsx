@@ -13,7 +13,7 @@ import config from '../../config.ts';
 import { Spinner, Pagination } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-import CatCard from "../../components/elements/CatCard/CatCard.tsx";
+import CatCard from "../../components/CatCard/CatCard.tsx";
 
 interface CatsPageProps { }
 

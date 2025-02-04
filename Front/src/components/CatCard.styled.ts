@@ -18,11 +18,6 @@ font-size: 120%;
 margin-top: 8px;
 `;
 
-export const CatStatus = styled.p`
-color: lightgray;
-font-size: 80%;
-`;
-
 export const CatPrice = styled.p`
 font-size: 110%;
 margin-bottom: 4px;

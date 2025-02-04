@@ -1,11 +1,11 @@
 import { FC } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
-import Header from './components/elements/PageHeader/PageHeader.tsx';
-import LoginPage from './pages/LoginPage/LoginPage.tsx';
-import MintPage from './pages/MintPage/MintPage.tsx';
-import RegisterPage from './pages/RegisterPage/RegisterPage.tsx';
-import CatsPage from './pages/CatsPage/CatsPage.tsx';
+import Header from './components/PageHeader/PageHeader.tsx';
+import Login from './pages/Login/Login.tsx';
+import Mint from './pages/Mint/Mint.tsx';
+import Register from './pages/Register/Register.tsx';
+import Cats from './pages/CatsPage/Cats.ts';
 
 interface AppProps {}
 
@@ -16,10 +16,10 @@ const App: FC<AppProps> = () => {
          <main>
             <Routes>
                <Route path="/" element={<></>} />
-               <Route path="/mint" element={<MintPage />} />
-               <Route path="/login" element={<LoginPage />} />
-               <Route path="/register" element={<RegisterPage />} />
-               <Route path="/cats" element={<CatsPage />} />
+               <Route path="/mint" element={<Mint />} />
+               <Route path="/login" element={<Login />} />
+               <Route path="/register" element={<Register />} />
+               <Route path="/cats" element={<Cats />} />
             </Routes>
          </main>
       </BrowserRouter>

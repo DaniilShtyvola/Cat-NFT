@@ -4,7 +4,7 @@ import {
    CatName,
    CatPrice,
    GrayText
-} from './CatCard.styled.ts';
+} from '../CatCard.styled.ts';
 
 import Web3 from "web3";
 import { Button } from "react-bootstrap";
@@ -12,12 +12,12 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEthereum } from '@fortawesome/free-brands-svg-icons'
-import { faXmark, faCheck, faStar } from '@fortawesome/free-solid-svg-icons'
+import { faCartShopping, faStar } from '@fortawesome/free-solid-svg-icons'
 
-import CONTRACT_ABI from '../../../CatNFT.json';
-import config from '../../../config.ts';
+import CONTRACT_ABI from '../../CatNFT.json';
+import config from '../../config.ts';
 
-interface CatCardProps {
+interface CatMarketCardProps {
    id: number;
    cat: {
       name: string;
@@ -29,7 +29,7 @@ interface CatCardProps {
    walletAddress: string;
 }
 
-const CatCard: FC<CatCardProps> = ({ cat, id, walletAddress }) => {
+const CatMarketCard: FC<CatMarketCardProps> = ({ cat, id, walletAddress }) => {
    const [isForSale, setIsForSale] = useState(cat.isForSale);
    const [loading, setLoading] = useState(false);
 
@@ -42,24 +42,32 @@ const CatCard: FC<CatCardProps> = ({ cat, id, walletAddress }) => {
 
    const priceInEther = weiToEther(BigInt(cat.price));
 
-   const toggleSaleStatus = async () => {
+   const handleBuy = async () => {
       if (!walletAddress) {
-         console.error("Wallet address not found!");
+         console.error("Wallet address is not available");
          return;
       }
-
+   
+      setLoading(true);
+   
       try {
-         setLoading(true);
-
-         if (!isForSale) {
-            await contract.methods.listForSale(id, cat.price).send({ from: walletAddress });
-         } else {
-            await contract.methods.delist(id).send({ from: walletAddress });
-         }
-
-         setIsForSale(!isForSale);
+         const priceInWei = web3.utils.toWei(cat.price, "ether");
+   
+         const transaction = contract.methods.buyCat(id);
+         const gas = await transaction.estimateGas({
+            from: walletAddress,
+            value: priceInWei,
+         });
+   
+         await transaction.send({
+            from: walletAddress,
+            value: priceInWei,
+            gas: gas.toString(),
+         });
+   
+         setIsForSale(false);
       } catch (error) {
-         console.error("Transaction error:", error);
+         console.error("Error buying cat:", error);
       } finally {
          setLoading(false);
       }
@@ -100,20 +108,18 @@ const CatCard: FC<CatCardProps> = ({ cat, id, walletAddress }) => {
          }}>
             <Button
                variant={isForSale ? "success" : "danger"}
-               onClick={toggleSaleStatus}
+               onClick={handleBuy}
                style={{
                   width: "140px",
                   marginTop: "8px"
                }}
                disabled={loading}
             >
-               {loading ? "Processing..." :
-                  isForSale ? <><FontAwesomeIcon icon={faCheck} /> On sale</> :
-                     <><FontAwesomeIcon icon={faXmark} /> Not on sale</>}
+               <FontAwesomeIcon icon={faCartShopping} /> Buy
             </Button>
          </div>
       </CardWrapper>
    );
 };
 
-export default CatCard;
+export default CatMarketCard;
