@@ -6,6 +6,7 @@ import {
 
 import Web3 from "web3";
 import { jwtDecode } from "jwt-decode";
+import axios from 'axios';
 
 import CONTRACT_ABI from '../../CatNFT.json';
 import config from '../../config.ts';
@@ -16,8 +17,6 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 const CreateCatNFT = () => {
    const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
-   const [imageUrl, setImageUrl] = useState("");
-   const [name, setName] = useState("");
    const [price, setPrice] = useState("");
 
    const [loading, setLoading] = useState(false);
@@ -44,17 +43,37 @@ const CreateCatNFT = () => {
 
       setLoading(true);
 
-      if (!imageUrl || !name || !price) {
-         setMessage({ text: "Please fill in all fields.", variant: "danger" });
+      if (!price) {
+         setMessage({ text: "Please enter all required fields.", variant: "danger" });
+         setLoading(false);
          return;
       }
 
       try {
+         const response = await axios.get(
+            `https://api.thecatapi.com/v1/images/search?api_key=${config.CAT_API_KEY}&has_breeds=true`
+         );
+
+         const generatedImageUrl = response.data[0].url;
+         const breed = response.data[0].breeds && response.data[0].breeds.length > 0
+            ? response.data[0].breeds[0].name
+            : "Unknown";
+         const temperament = response.data[0].breeds && response.data[0].breeds.length > 0
+            ? response.data[0].breeds[0].temperament || "Unknown"
+            : "Unknown";
+
+         const temperamentWords = temperament.split(',');
+         const randomTemperament = temperamentWords[Math.floor(Math.random() * temperamentWords.length)].trim();
+
+         const formattedBreed = breed.includes(" ") ? breed.split(" ")[1] : breed;
+
+         const generatedCatName = `${randomTemperament} ${formattedBreed}`;
+
          const web3 = new Web3(config.GANACHE_URL);
 
          const contract = new web3.eth.Contract(CONTRACT_ABI.abi, config.CONTRACT_ADDRESS);
 
-         const transaction = contract.methods.createCat(imageUrl, name, web3.utils.toWei(price, "ether"));
+         const transaction = contract.methods.createCat(generatedImageUrl, generatedCatName, web3.utils.toWei(price, "ether"));
 
          if (walletAddress) {
             const gas = await transaction.estimateGas({ from: walletAddress });
@@ -66,7 +85,9 @@ const CreateCatNFT = () => {
             console.error('Wallet address is not available');
          }
 
-         console.log("Created succesfully");
+         setMessage({ text: "NFT minted successfully!", variant: "success" });
+         
+         setPrice("");
       } catch (err) {
          setMessage({ text: "Error during NFT minting.", variant: "danger" });
          console.error("Error during NFT minting:", err);
@@ -102,36 +123,6 @@ const CreateCatNFT = () => {
                </div>
             ) : (
                <Form onSubmit={handleCreateCat} style={{ width: "300px" }}>
-                  <Form.Group controlId="formImageUrl" className="mb-3">
-                     <Form.Control
-                        className='FormPlaceholder'
-                        style={{
-                           backgroundColor: "rgb(33, 37, 41)",
-                           color: "white",
-                           border: "none"
-                        }}
-                        type="text"
-                        placeholder="Enter image url"
-                        value={imageUrl}
-                        onChange={(e) => setImageUrl(e.target.value)}
-                        required
-                     />
-                  </Form.Group>
-                  <Form.Group controlId="formName" className="mb-3">
-                     <Form.Control
-                        className='FormPlaceholder'
-                        style={{
-                           backgroundColor: "rgb(33, 37, 41)",
-                           color: "white",
-                           border: "none"
-                        }}
-                        type="text"
-                        placeholder="Enter name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                     />
-                  </Form.Group>
                   <Form.Group controlId="formPrice" className="mb-3">
                      <Form.Control
                         className='FormPlaceholder'

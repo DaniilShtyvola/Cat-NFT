@@ -5,7 +5,6 @@ import {
    CatPrice,
    GrayText
 } from './CatCard.styled.ts';
-import "./CatCard.css";
 
 import Web3 from "web3";
 import { Button } from "react-bootstrap";

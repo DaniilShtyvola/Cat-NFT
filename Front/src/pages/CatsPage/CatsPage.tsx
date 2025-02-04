@@ -71,8 +71,6 @@ const CatsPage: FC<CatsPageProps> = () => {
          };
 
          fetchCats();
-
-         console.log(cats);
       }
    }, [walletAddress]);
 

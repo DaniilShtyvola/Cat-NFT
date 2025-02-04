@@ -106,7 +106,6 @@ contract CatNFT {
         cats[_catId].isForSale = false;
         cats[_catId].owner = msg.sender;
 
-        // Remove cat from previous owner's list
         uint256[] storage previousOwnerCats = ownerToCats[previousOwner];
         for (uint256 i = 0; i < previousOwnerCats.length; i++) {
             if (previousOwnerCats[i] == _catId) {
@@ -118,10 +117,8 @@ contract CatNFT {
             }
         }
 
-        // Add cat to new owner's list
         ownerToCats[msg.sender].push(_catId);
 
-        // Transfer funds to the previous owner
         payable(previousOwner).transfer(msg.value);
 
         emit CatSold(_catId, msg.sender, msg.value);
@@ -136,7 +133,6 @@ contract CatNFT {
                 count++;
             }
         }
-        // Resize the array to remove unused slots
         assembly {
             mstore(marketplaceCats, count)
         }
