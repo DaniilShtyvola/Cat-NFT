@@ -22,7 +22,7 @@ const CatsPage: FC<CatsPageProps> = () => {
    const [walletAddress, setWalletAddress] = useState<string | null>(null);
    const [cats, setCats] = useState<any[]>([]);
    const [currentPage, setCurrentPage] = useState<number>(1);
-   
+
    const indexOfLastCat = currentPage * 12;
    const indexOfFirstCat = indexOfLastCat - 12;
 
@@ -87,8 +87,8 @@ const CatsPage: FC<CatsPageProps> = () => {
                <div>
                   <div className="row">
                      {cats.slice(indexOfFirstCat, indexOfLastCat).map((cat, index) => (
-                        <div className="col-3" key={index}>
-                           <CatCard cat={cat} />
+                        <div className="col-3" key={`${cat.name}-${index}`}>
+                           <CatCard id={index} cat={cat} walletAddress={walletAddress || ''} />
                         </div>
                      ))}
                   </div>

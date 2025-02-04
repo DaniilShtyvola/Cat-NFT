@@ -8,7 +8,6 @@ border-radius: 12px;
 margin-bottom: 14px;
 display: flex;
 flex-direction: column;
-align-items: center;
 color: white;
 `;
 
@@ -27,4 +26,10 @@ font-size: 80%;
 export const CatPrice = styled.p`
 font-size: 110%;
 margin-bottom: 4px;
+`;
+
+export const GrayText = styled.span`
+font-size: 12px;
+font-weight: 400;
+color: gray;
 `;
