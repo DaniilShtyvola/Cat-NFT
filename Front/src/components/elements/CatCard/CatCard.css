@@ -1,0 +1,7 @@
+.image-container:hover .overlay {
+    opacity: 1;
+}
+
+.image-container:hover img {
+    opacity: 0.7;
+}
