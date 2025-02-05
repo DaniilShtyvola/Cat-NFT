@@ -3,7 +3,7 @@ import {
    PageWrapper,
    PageContainer
 } from '../Page.styled.ts';
-import './RegisterPage.css';
+import './Register.css';
 
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';

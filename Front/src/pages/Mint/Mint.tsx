@@ -64,10 +64,11 @@ const CreateCatNFT = () => {
 
          const temperamentWords = temperament.split(',');
          const randomTemperament = temperamentWords[Math.floor(Math.random() * temperamentWords.length)].trim();
+         const formattedTemperament = randomTemperament.charAt(0).toUpperCase() + randomTemperament.slice(1);
 
          const formattedBreed = breed.includes(" ") ? breed.split(" ")[1] : breed;
 
-         const generatedCatName = `${randomTemperament} ${formattedBreed}`;
+         const generatedCatName = `${formattedTemperament} ${formattedBreed}`;
 
          const web3 = new Web3(config.GANACHE_URL);
 
@@ -76,21 +77,30 @@ const CreateCatNFT = () => {
          const transaction = contract.methods.createCat(generatedImageUrl, generatedCatName, web3.utils.toWei(price, "ether"));
 
          if (walletAddress) {
-            const gas = await transaction.estimateGas({ from: walletAddress });
-            await transaction.send({
-               from: walletAddress,
-               gas: gas.toString(),
-            });
+            try {
+               const gas = await transaction.estimateGas({
+                  from: walletAddress,
+                  value: Web3.utils.toWei("0.0025", "ether")
+               });
+
+               await transaction.send({
+                  from: walletAddress,
+                  gas: gas.toString(),
+                  value: Web3.utils.toWei("0.0025", "ether")
+               });
+            } catch (error) {
+               const errorMessage = (error as Error).message || "An unknown error occurred.";
+               setMessage({ text: errorMessage, variant: "danger" });
+            }
          } else {
-            console.error('Wallet address is not available');
+            setMessage({ text: "Wallet address is not available.", variant: "danger" });
          }
 
          setMessage({ text: "NFT minted successfully!", variant: "success" });
-         
+
          setPrice("");
       } catch (err) {
          setMessage({ text: "Error during NFT minting.", variant: "danger" });
-         console.error("Error during NFT minting:", err);
       } finally {
          setLoading(false);
       }

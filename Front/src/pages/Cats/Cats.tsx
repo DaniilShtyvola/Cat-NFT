@@ -63,6 +63,8 @@ const CatsPage: FC<CatsPageProps> = () => {
                   return catData;
                }));
 
+               console.log(catsData);
+
                setCats(catsData);
             } catch (error) {
                console.error('Error fetching cats:', error);

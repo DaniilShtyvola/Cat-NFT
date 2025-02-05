@@ -7,12 +7,12 @@ import {
 } from '../CatCard.styled.ts';
 
 import Web3 from "web3";
-import { Button } from "react-bootstrap";
+import { Button, Spinner } from "react-bootstrap";
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEthereum } from '@fortawesome/free-brands-svg-icons'
-import { faCartShopping, faStar } from '@fortawesome/free-solid-svg-icons'
+import { faCartShopping, faStar, faClock } from '@fortawesome/free-solid-svg-icons'
 
 import CONTRACT_ABI from '../../CatNFT.json';
 import config from '../../config.ts';
@@ -25,6 +25,7 @@ interface CatMarketCardProps {
       price: string;
       quality: number;
       isForSale: boolean;
+      creationTime: string;
    };
    walletAddress: string;
 }
@@ -47,24 +48,24 @@ const CatMarketCard: FC<CatMarketCardProps> = ({ cat, id, walletAddress }) => {
          console.error("Wallet address is not available");
          return;
       }
-   
+
       setLoading(true);
-   
+
       try {
          const priceInWei = web3.utils.toWei(cat.price, "ether");
-   
+
          const transaction = contract.methods.buyCat(id);
          const gas = await transaction.estimateGas({
             from: walletAddress,
             value: priceInWei,
          });
-   
+
          await transaction.send({
             from: walletAddress,
             value: priceInWei,
             gas: gas.toString(),
          });
-   
+
          setIsForSale(false);
       } catch (error) {
          console.error("Error buying cat:", error);
@@ -96,6 +97,7 @@ const CatMarketCard: FC<CatMarketCardProps> = ({ cat, id, walletAddress }) => {
          />
          <CatName><GrayText>Name: </GrayText>{cat.name}</CatName>
          <CatPrice><GrayText>Price: </GrayText>{priceInEther} <FontAwesomeIcon icon={faEthereum} /></CatPrice>
+         <CatPrice><GrayText><FontAwesomeIcon icon={faClock} /> Minted: </GrayText>{cat.creationTime}</CatPrice>
          <CatPrice>
             <GrayText>Quality: </GrayText>
             {Array.from({ length: Number(cat.quality) }, (_, index) => (
@@ -115,7 +117,16 @@ const CatMarketCard: FC<CatMarketCardProps> = ({ cat, id, walletAddress }) => {
                }}
                disabled={loading}
             >
-               <FontAwesomeIcon icon={faCartShopping} /> Buy
+               {loading ? (
+                  <Spinner
+                     animation="border"
+                     style={{ width: "18px", height: "18px" }}
+                  />
+               ) : (
+                  <>
+                     <FontAwesomeIcon icon={faCartShopping} /> Buy
+                  </>
+               )}
             </Button>
          </div>
       </CardWrapper>

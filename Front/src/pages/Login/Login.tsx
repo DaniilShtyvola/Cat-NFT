@@ -3,7 +3,7 @@ import {
    PageWrapper,
    PageContainer
 } from '../Page.styled.ts';
-import './LoginPage.css';
+import './Login.css';
 
 import axios from 'axios';
 import { Link } from 'react-router-dom';
