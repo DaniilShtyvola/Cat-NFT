@@ -19,8 +19,8 @@ import CONTRACT_ABI from '../../CatNFT.json';
 import config from '../../config.ts';
 
 interface CatCardProps {
-   id: number;
    cat: {
+      id: number;
       name: string;
       imageUrl: string;
       price: string;
@@ -31,7 +31,7 @@ interface CatCardProps {
    walletAddress: string;
 }
 
-const CatCard: FC<CatCardProps> = ({ cat, id, walletAddress }) => {
+const CatCard: FC<CatCardProps> = ({ cat, walletAddress }) => {
    const [editPrice, setEditPrice] = useState(false);
    const [newPrice, setNewPrice] = useState<number>(parseFloat(cat.price) / 1e18);
 
@@ -40,10 +40,6 @@ const CatCard: FC<CatCardProps> = ({ cat, id, walletAddress }) => {
 
    const web3 = new Web3(config.GANACHE_URL);
    const contract = new web3.eth.Contract(CONTRACT_ABI.abi, config.CONTRACT_ADDRESS);
-
-   const weiToEther = (wei: bigint): number => {
-      return Number(wei) / 1e18;
-   };
 
    const toggleSaleStatus = async () => {
       if (!walletAddress) {
@@ -54,13 +50,23 @@ const CatCard: FC<CatCardProps> = ({ cat, id, walletAddress }) => {
       try {
          setLoading(true);
 
+         if (newPrice == 0) {
+            const event = new CustomEvent('noPriceError', {});
+            window.dispatchEvent(event);
+
+            return;
+         }
+
          if (!isForSale) {
-            await contract.methods.listForSale(id, cat.price).send({ from: walletAddress });
+            await contract.methods.listForSale(cat.id, cat.price).send({ from: walletAddress });
          } else {
-            await contract.methods.delist(id).send({ from: walletAddress });
+            await contract.methods.delist(cat.id).send({ from: walletAddress });
          }
 
          setIsForSale(!isForSale);
+
+         const event = new CustomEvent('catChanged', {});
+         window.dispatchEvent(event);
       } catch (error) {
          console.error("Transaction error:", error);
       } finally {
@@ -97,12 +103,12 @@ const CatCard: FC<CatCardProps> = ({ cat, id, walletAddress }) => {
 
          const priceInWei = web3.utils.toWei(newPrice.toString(), "ether");
 
-         await contract.methods.updatePrice(id, priceInWei).send({ from: walletAddress });
+         await contract.methods.updatePrice(cat.id, priceInWei).send({ from: walletAddress });
 
-         console.log("Price updated successfully!");
-
-         setNewPrice(newPrice);
          setEditPrice(false);
+
+         const event = new CustomEvent('catChanged', {});
+         window.dispatchEvent(event);
       } catch (error) {
          console.error("Error updating price:", error);
       } finally {
@@ -131,11 +137,10 @@ const CatCard: FC<CatCardProps> = ({ cat, id, walletAddress }) => {
                objectFit: 'cover'
             }}
          />
-         <CatName><GrayText>Name: </GrayText>{cat.name}</CatName>
+         <CatName style={{ marginBottom: "0" }}><GrayText>Name: </GrayText>{cat.name}</CatName>
          {editPrice ? (
             <div style={{
                display: "flex",
-               justifyContent: "center",
                marginBottom: "8px"
             }}>
                <InputGroup>
@@ -150,7 +155,8 @@ const CatCard: FC<CatCardProps> = ({ cat, id, walletAddress }) => {
                   <Form.Control style={{
                      backgroundColor: "rgb(23, 25, 27)",
                      border: "0",
-                     color: "white"
+                     color: "white",
+                     flex: "1"
                   }}
                      aria-label="Amount"
                      type="number"
@@ -179,9 +185,15 @@ const CatCard: FC<CatCardProps> = ({ cat, id, walletAddress }) => {
                </Button>
             </div>
          ) : (
-            <CatPrice><GrayText>Price: </GrayText>{newPrice} <FontAwesomeIcon icon={faEthereum} /></CatPrice>
+            <CatPrice>
+               {newPrice == 0 ? <GrayText>No price yet</GrayText> :
+                  <>
+                     <GrayText>Price: </GrayText> {newPrice} <FontAwesomeIcon icon={faEthereum} />
+                  </>
+               }
+            </CatPrice>
          )}
-         <CatPrice style={{ fontSize: "90%" }}><GrayText><FontAwesomeIcon icon={faClock} /> Minted: </GrayText>{new Date(Number(cat.creationTime) * 1000).toLocaleString()}</CatPrice>
+         <CatPrice style={{ fontSize: "90%", marginBottom: "0" }}><GrayText><FontAwesomeIcon style={{ margin: "0 2px 1px 0 " }} icon={faClock} />  </GrayText>{new Date(Number(cat.creationTime) * 1000).toLocaleString()}</CatPrice>
          <CatPrice>
             <GrayText>Quality: </GrayText>
             {Array.from({ length: Number(cat.quality) }, (_, index) => (

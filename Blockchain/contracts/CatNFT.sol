@@ -147,18 +147,25 @@ contract CatNFT {
         emit CatSold(_catId, msg.sender, msg.value);
     }
 
-    function getMarketplaceCats() public view returns (uint256[] memory) {
-        uint256[] memory marketplaceCats = new uint256[](cats.length);
+    function getMarketplaceCats(
+        address _user
+    ) public view returns (uint256[] memory) {
+        uint256 totalCats = cats.length;
+        uint256[] memory tempCats = new uint256[](totalCats);
         uint256 count = 0;
-        for (uint256 i = 0; i < cats.length; i++) {
-            if (cats[i].isForSale) {
-                marketplaceCats[count] = i;
+
+        for (uint256 i = 0; i < totalCats; i++) {
+            if (cats[i].isForSale && cats[i].owner != _user) {
+                tempCats[count] = i;
                 count++;
             }
         }
-        assembly {
-            mstore(marketplaceCats, count)
+
+        uint256[] memory marketplaceCats = new uint256[](count);
+        for (uint256 i = 0; i < count; i++) {
+            marketplaceCats[i] = tempCats[i];
         }
+
         return marketplaceCats;
     }
 

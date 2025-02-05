@@ -50,9 +50,7 @@ const LoginPage: FC<LoginPageProps> = () => {
          const loggedInEvent = new CustomEvent("loggedIn");
          window.dispatchEvent(loggedInEvent);
 
-         setMessage({ text: "Successfully logged in!", variant: "success" });
-
-         navigate('/market');
+         navigate('/');
       } catch (error) {
          setMessage({ text: "Login failed.", variant: "danger" });
          console.error("Error during login:", error);
@@ -121,15 +119,19 @@ const LoginPage: FC<LoginPageProps> = () => {
                   <Alert
                      style={{
                         opacity: isFadingOut ? 0 : 1,
-                        height: isFadingOut ? 0 : "42px",
-                        padding: isFadingOut ? 0 : '8px',
+                        height: isFadingOut ? "10px" : "40px",
+                        padding: isFadingOut ? "8px 20px" : "4px 20px",
+                        minWidth: "120px",
                         textAlign: "center",
                         marginBottom: 0,
                         overflow: "hidden",
                         transition: "opacity 1s ease-in-out, height 1s ease-in-out, padding 1s ease-in-out",
                         backgroundColor: message.variant == "success" ? "rgb(40, 167, 69)" : "rgb(220, 53, 69)",
                         color: "white",
-                        border: "rgb(33, 37, 41) 1px solid",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        border: "rgb(33, 37, 41) 1px solid"
                      }}
                   >
                      {message.text}

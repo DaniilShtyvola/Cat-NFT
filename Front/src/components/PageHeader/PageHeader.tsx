@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { jwtDecode } from "jwt-decode";
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCat, faRightToBracket, faShop, faList, faRightFromBracket, faSquarePlus } from '@fortawesome/free-solid-svg-icons'
+import { faCat, faRightToBracket, faShop, faTable, faRightFromBracket } from '@fortawesome/free-solid-svg-icons'
 
 import { Container, Navbar, Nav, Dropdown } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -58,14 +58,10 @@ const PageHeader: FC<PageHeaderProps> = () => {
                      {!nickname && (
                         <Nav.Link as={Link} to="/login" style={{ paddingRight: "22px" }}><FontAwesomeIcon icon={faRightToBracket} /> Log in</Nav.Link>
                      )}
-                     <Nav.Link as={Link} to="/market" style={{ paddingRight: "22px" }}><FontAwesomeIcon icon={faShop} /> Market</Nav.Link>
+                     <Nav.Link as={Link} to="/" style={{ paddingRight: "22px" }}><FontAwesomeIcon icon={faShop} /> Market</Nav.Link>
                      {nickname && (
-                        <Nav.Link as={Link} to="/cats" style={{ paddingRight: "22px" }}><FontAwesomeIcon icon={faList} /> My cats</Nav.Link>
+                        <Nav.Link as={Link} to="/cats" style={{ paddingRight: "22px" }}><FontAwesomeIcon icon={faTable} /> My cats</Nav.Link>
                      )}
-                     {nickname && (
-                        <Nav.Link as={Link} to="/mint" style={{ paddingRight: "22px" }}><FontAwesomeIcon icon={faSquarePlus} /> Mint</Nav.Link>
-                     )}
-                     
                   </Nav>
                   {nickname && (
                      <Navbar.Collapse className="justify-content-end">

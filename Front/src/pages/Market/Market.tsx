@@ -14,7 +14,7 @@ import { Spinner, Pagination, Button, Form, InputGroup } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faArrowDownWideShort, faArrowUpWideShort } from '@fortawesome/free-solid-svg-icons'
+import { faArrowDownWideShort, faArrowUpWideShort, faRotate, faFaceSadTear } from '@fortawesome/free-solid-svg-icons'
 
 import CatMarketCard from "../../components/CatMarketCard/CatMarketCard.tsx";
 
@@ -28,7 +28,6 @@ const Market: FC<MarketProps> = () => {
 
    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
    const [sortBy, setSortBy] = useState<string>("price");
-
    const toggleSortOrder = () => {
       setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
    };
@@ -58,41 +57,66 @@ const Market: FC<MarketProps> = () => {
       }
    }, []);
 
-   useEffect(() => {
-      const fetchMarketplaceCats = async () => {
-         setLoading(true);
-         try {
+   const fetchMarketplaceCats = async () => {
+      setLoading(true);
+      try {
+         const token = localStorage.getItem("token");
+
+         if (token) {
+            const decoded: any = jwtDecode(token);
+            const WALLET_ADDRESS = decoded.WalletAddress;
+
             const web3 = new Web3(config.GANACHE_URL);
             const contract = new web3.eth.Contract(CONTRACT_ABI.abi, config.CONTRACT_ADDRESS);
 
-            const catIds: number[] = await contract.methods.getMarketplaceCats().call();
+            const catIds: number[] = await contract.methods.getMarketplaceCats(WALLET_ADDRESS).call();
 
-            const catsData = await Promise.all(
-               catIds.map(async (catId: number) => {
-                  const catData = await contract.methods.cats(catId).call();
-                  return { ...catData, id: catId };
-               })
-            );
+            const catsData = await Promise.all(catIds.map(async (catId: number) => {
+               const catData = await contract.methods.cats(catId).call();
+               return {
+                  id: catId,
+                  ...catData
+               };
+            }));
 
             setCats(catsData);
-         } catch (error) {
-            console.error("Error fetching marketplace cats:", error);
-         } finally {
-            setLoading(false);
          }
+      } catch (error) {
+         console.error("Error fetching marketplace cats:", error);
+      } finally {
+         setLoading(false);
+      }
+   };
+
+   useEffect(() => {
+      const handleCatChanged = async () => {
+         fetchMarketplaceCats();
       };
 
+      window.addEventListener('catBought', handleCatChanged as EventListener);
+
+      return () => {
+         window.removeEventListener('catBought', handleCatChanged as EventListener);
+      };
+   }, []);
+
+   useEffect(() => {
       fetchMarketplaceCats();
    }, []);
 
-   const sortedCats = [...cats].sort((a, b) => {
-      if (sortBy === "price") {
-         return sortOrder === "asc" ? a.price - b.price : b.price - a.price;
-      } else if (sortBy === "date") {
-         return sortOrder === "asc" ? a.quality - b.quality : b.quality - a.quality;
-      }
-      return 0;
-   });
+   const sortedCats = [...cats]
+      .sort((a, b) => {
+         if (sortBy === "price") {
+            const priceA = Number(a.price);
+            const priceB = Number(b.price);
+            return sortOrder === "asc" ? priceA - priceB : priceB - priceA;
+         } else if (sortBy === "date") {
+            const qualityA = Number(a.quality);
+            const qualityB = Number(b.quality);
+            return sortOrder === "asc" ? qualityA - qualityB : qualityB - qualityA;
+         }
+         return 0;
+      });
 
    const totalPages = Math.ceil(sortedCats.length / 12);
    const currentCats = sortedCats.slice(indexOfFirstCat, indexOfLastCat);
@@ -105,52 +129,88 @@ const Market: FC<MarketProps> = () => {
                   <Spinner animation="border" style={{ color: "white" }} />
                </div>
             ) : (
-               <div>
-                  <InputGroup className="d-flex align-items-center w-auto">
-                     <span className="me-2">Sort by</span>
-                     <Form.Select
-                        className="w-auto"
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                     >
-                        <option value="price">Price</option>
-                        <option value="date">Quality</option>
-                     </Form.Select>
-                     <Button variant="primary" onClick={toggleSortOrder}>
-                        <FontAwesomeIcon icon={sortOrder === "asc" ? faArrowDownWideShort : faArrowUpWideShort} />
-                     </Button>
-                  </InputGroup>
-
-                  <div className="row">
-                     {currentCats.map((cat, index) => (
-                        <div className="col-3" key={`${cat.name}-${index}`}>
-                           <CatMarketCard id={index} cat={cat} walletAddress={walletAddress || ""} />
-                        </div>
-                     ))}
-                  </div>
-
-                  <div className="d-flex justify-content-center">
-                     <Pagination>
-                        {currentPage > 1 && (
-                           <Pagination.Prev onClick={() => paginate(currentPage - 1)} />
-                        )}
-
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
-                           <Pagination.Item
-                              key={number}
-                              active={currentPage === number}
-                              onClick={() => paginate(number)}
+               sortedCats.length > 0 ? (
+                  <div>
+                     <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginBottom: "20px"
+                     }}>
+                        <InputGroup>
+                           <p style={{
+                              margin: "4px 12px 0 0",
+                              color: "white"
+                           }}>
+                              Sort by
+                           </p>
+                           <Form.Select
+                              style={{
+                                 flexGrow: "0",
+                                 width: "auto",
+                                 borderTopLeftRadius: "6px",
+                                 borderBottomLeftRadius: "6px",
+                                 backgroundColor: "rgb(33, 37, 41)",
+                                 border: "none",
+                                 color: "white"
+                              }}
+                              value={sortBy}
+                              onChange={(e) => setSortBy(e.target.value)}
                            >
-                              {number}
-                           </Pagination.Item>
-                        ))}
+                              <option value="price">Price</option>
+                              <option value="date">Quality</option>
+                           </Form.Select>
+                           <Button variant="dark" onClick={toggleSortOrder}>
+                              <FontAwesomeIcon icon={sortOrder === "asc" ? faArrowUpWideShort : faArrowDownWideShort} />
+                           </Button>
+                        </InputGroup>
+                        <Button variant="dark" onClick={fetchMarketplaceCats}>
+                           <FontAwesomeIcon icon={faRotate} />
+                        </Button>
+                     </div>
 
-                        {currentPage < totalPages && (
-                           <Pagination.Next onClick={() => paginate(currentPage + 1)} />
-                        )}
-                     </Pagination>
+                     <div className="row">
+                        {currentCats.map((cat) => (
+                           <div className="col-3" key={`${cat.id}`}>
+                              <CatMarketCard cat={cat} walletAddress={walletAddress || ''} />
+                           </div>
+                        ))}
+                     </div>
+
+                     {totalPages > 1 && (
+                        <div className="d-flex justify-content-center">
+                           <Pagination>
+                              {currentPage > 1 && (
+                                 <Pagination.Prev onClick={() => paginate(currentPage - 1)} />
+                              )}
+
+                              {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
+                                 <Pagination.Item
+                                    key={number}
+                                    active={currentPage === number}
+                                    onClick={() => paginate(number)}
+                                 >
+                                    {number}
+                                 </Pagination.Item>
+                              ))}
+
+                              {currentPage < totalPages && (
+                                 <Pagination.Next onClick={() => paginate(currentPage + 1)} />
+                              )}
+                           </Pagination>
+                        </div>
+                     )};
                   </div>
-               </div>
+               ) : (
+                  <div style={{
+                     display: "flex",
+                     justifyContent: "center",
+                     color: "white",
+                     fontSize: "140%",
+                     marginTop: "64px"
+                  }}>
+                     <FontAwesomeIcon style={{margin: "7px 7px"}} icon={faFaceSadTear} /> No cats available for sale
+                  </div>
+               )
             )}
          </PageContainer>
       </PageWrapper>
