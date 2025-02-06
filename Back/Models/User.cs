@@ -1,9 +1,10 @@
 ﻿public class User
 {
-    public int Id { get; set; } // Идентификатор пользователя
-    public string Email { get; set; } // Электронная почта пользователя
-    public string PasswordHash { get; set; } // Хэш пароля
-    public string UserName { get; set; } // Имя пользователя
-    public string WalletAddress { get; set; } // Адрес кошелька (например, из Ganache)
-    public DateTime CreatedAt { get; set; } // Дата создания аккаунта
+    public int Id { get; set; }
+    public string UserName { get; set; }
+    public string Email { get; set; }
+    public string PasswordHash { get; set; }
+    public string WalletAddress { get; set; }
+    public bool IsAdmin { get; set; } = false;
+    public DateTime CreatedAt { get; set; }
 }

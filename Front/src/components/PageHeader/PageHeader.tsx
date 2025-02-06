@@ -39,7 +39,6 @@ const PageHeader: FC<PageHeaderProps> = () => {
 
    const handleLogOut = () => {
       localStorage.removeItem("token");
-      localStorage.removeItem('is_admin');
       setNickname(null);
       navigate('/');
    };

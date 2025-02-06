@@ -36,26 +36,26 @@ contract CatNFT {
         owner = payable(msg.sender);
     }
 
-    function createCat(
-        string memory _imageUrl,
-        string memory _name
-    ) public payable {
-        require(msg.value >= MINT_PRICE, "Insufficient ETH sent");
-
+    function createCat(string memory _imageUrl, string memory _name) public {
         uint256 randomValue = uint256(
             keccak256(
-                abi.encodePacked(block.timestamp, msg.sender, cats.length)
+                abi.encodePacked(
+                    block.timestamp,
+                    blockhash(block.number - 1),
+                    msg.sender,
+                    cats.length
+                )
             )
         ) % 100;
 
         uint8 _quality;
-        if (randomValue < 55) {
+        if (randomValue < 50) {
             _quality = 1;
-        } else if (randomValue < 80) {
+        } else if (randomValue < 75) {
             _quality = 2;
-        } else if (randomValue < 92) {
+        } else if (randomValue < 90) {
             _quality = 3;
-        } else if (randomValue < 98) {
+        } else if (randomValue < 97) {
             _quality = 4;
         } else {
             _quality = 5;
@@ -155,7 +155,12 @@ contract CatNFT {
         uint256 count = 0;
 
         for (uint256 i = 0; i < totalCats; i++) {
-            if (cats[i].isForSale && cats[i].owner != _user) {
+            if (_user == address(0)) {
+                if (cats[i].isForSale) {
+                    tempCats[count] = i;
+                    count++;
+                }
+            } else if (cats[i].isForSale && cats[i].owner != _user) {
                 tempCats[count] = i;
                 count++;
             }

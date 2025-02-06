@@ -26,6 +26,8 @@ const CatsPage: FC<CatsPageProps> = () => {
    const [pageLoading, setPageLoading] = useState(false);
    const [mintLoading, setMintLoading] = useState(false);
 
+   const [isAdmin, setIsAdmin] = useState(false);
+
    const [walletAddress, setWalletAddress] = useState<string | null>(null);
    const [cats, setCats] = useState<any[]>([]);
    const [currentPage, setCurrentPage] = useState<number>(1);
@@ -52,7 +54,24 @@ const CatsPage: FC<CatsPageProps> = () => {
 
    useEffect(() => {
       fetchWalletAddress();
+
+      fetchIsAdmin();
    }, []);
+
+   const fetchIsAdmin = async () => {
+      const token = localStorage.getItem("token");
+
+      if (token) {
+         try {
+            const decoded: any = jwtDecode(token);
+            const decodedIsAdmin = decoded.isAdmin;
+
+            setIsAdmin(decodedIsAdmin == "true");
+         } catch (error) {
+            console.error('Error decoding JWT:', error);
+         }
+      }
+   };
 
    const fetchWalletAddress = async () => {
       const token = localStorage.getItem("token");
@@ -139,14 +158,12 @@ const CatsPage: FC<CatsPageProps> = () => {
          if (walletAddress) {
             try {
                const gas = await transaction.estimateGas({
-                  from: walletAddress,
-                  value: Web3.utils.toWei("0.0025", "ether")
+                  from: walletAddress
                });
 
                await transaction.send({
                   from: walletAddress,
-                  gas: gas.toString(),
-                  value: Web3.utils.toWei("0.0025", "ether")
+                  gas: gas.toString()
                });
             } catch (error) {
                const errorMessage = (error as Error).message || "An unknown error occurred.";
@@ -277,23 +294,26 @@ const CatsPage: FC<CatsPageProps> = () => {
                      <FontAwesomeIcon icon={filter == 0 ? faShuffle : filter == 1 ? faCheck : faXmark} />
                   </Button>
                </InputGroup>
-               <Button
-                  style={{
-                     width: "180px"
-                  }}
-                  variant="dark"
-                  type="submit"
-                  onClick={handleCreateCat}
-               >
-                  {mintLoading ? (
-                     <Spinner
-                        animation="border"
-                        style={{ width: "18px", height: "18px" }}
-                     />
-                  ) : (
-                     <><FontAwesomeIcon icon={faPaw} style={{ marginRight: "4px" }} /> Mint NFT</>
-                  )}
-               </Button>
+               {isAdmin && (
+                  <Button
+                     style={{
+                        width: "180px"
+                     }}
+                     variant="dark"
+                     type="submit"
+                     onClick={handleCreateCat}
+                     disabled={!isAdmin}
+                  >
+                     {mintLoading ? (
+                        <Spinner
+                           animation="border"
+                           style={{ width: "18px", height: "18px" }}
+                        />
+                     ) : (
+                        <><FontAwesomeIcon icon={faPaw} style={{ marginRight: "4px" }} /> Mint NFT</>
+                     )}
+                  </Button>
+               )}
             </div>
             {pageLoading ? (
                <div className="d-flex justify-content-center align-items-center" style={{ height: "400px" }}>

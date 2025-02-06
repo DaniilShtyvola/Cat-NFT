@@ -5,6 +5,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace Controllers
 {
@@ -21,62 +22,97 @@ namespace Controllers
             _configuration = configuration;
         }
 
-        // Регистрация пользователя
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        [HttpPost("register-user")]
+        public async Task<IActionResult> RegisterUser([FromBody] RegisterRequest request)
         {
-            // Проверка на наличие пользователя с таким email
-            if (await _context.Users.AnyAsync(u => u.Email == request.Email))
-            {
-                return BadRequest("A user with this email already exists.");
-            }
+            return await Register(request, false);
+        }
 
-            // Проверка на наличие пользователя с таким кошельком
+        [HttpPost("register-admin")]
+        public async Task<IActionResult> RegisterAdmin([FromBody] RegisterRequest request, [FromHeader] string? adminToken)
+        {
+            if (string.IsNullOrEmpty(adminToken) || !IsAdmin(adminToken))
+                return Unauthorized("Only admins can create other admins.");
+
+            return await Register(request, true);
+        }
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
+                return Unauthorized("Invalid email or password.");
+
+            var token = GenerateJwtToken(user);
+
+            return Ok(new { Token = token });
+        }
+
+        private async Task<IActionResult> Register(RegisterRequest request, bool isAdmin)
+        {
+            if (await _context.Users.AnyAsync(u => u.Email == request.Email))
+                return BadRequest("A user with this email already exists.");
+
             if (await _context.Users.AnyAsync(u => u.WalletAddress == request.WalletAddress))
-            {
                 return BadRequest("This wallet is already in use.");
-            }
 
             var passwordHash = HashPassword(request.Password);
 
-            // Создание нового пользователя
             var user = new User
             {
                 UserName = request.UserName,
                 Email = request.Email,
                 PasswordHash = passwordHash,
                 WalletAddress = request.WalletAddress,
+                IsAdmin = isAdmin,
                 CreatedAt = DateTime.UtcNow
             };
 
-            // Добавление пользователя в контекст базы данных
             await _context.Users.AddAsync(user);
-            await _context.SaveChangesAsync();  // Сохранение изменений в базе данных
+            await _context.SaveChangesAsync();
 
-            return Ok(new { Message = "The user has been successfully registered." });
+            return Ok(new { Message = isAdmin ? "Admin registered successfully." : "User registered successfully." });
         }
 
-        // Авторизация (логин)
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        [HttpPost("create-admin")]
+        public async Task<IActionResult> CreateAdmin()
         {
-            // Поиск пользователя в базе данных
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-            if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
+            var email = "danyaadmin64@gmail.com";
+
+            var admin = new User
             {
-                return Unauthorized("Invalid email or password.");
-            }
+                UserName = "DanyaAdmin",
+                Email = email,
+                PasswordHash = HashPassword("Mh8ASf@6*"),
+                WalletAddress = "0x540c2ceF7f565fab894f1718dfFA888E5DF14e48",
+                IsAdmin = true,
+                CreatedAt = DateTime.UtcNow
+            };
 
-            // Генерация JWT токена
-            var token = GenerateJwtToken(user);
+            await _context.Users.AddAsync(admin);
+            await _context.SaveChangesAsync();
 
-            return Ok(new { Token = token });
+            return Ok("Admin created successfully.");
         }
 
-        // Хэширование пароля
+        private bool IsAdmin(string token)
+        {
+            try
+            {
+                var handler = new JwtSecurityTokenHandler();
+                var jwtToken = handler.ReadJwtToken(token);
+                var adminClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "isAdmin");
+                return adminClaim != null && adminClaim.Value == "true";
+            }
+            catch
+            {
+                return false;
+            }
+        }
         private string HashPassword(string password)
         {
-            var salt = new byte[128 / 8]; // Генерация соли
+            var salt = new byte[16];
             using (var rng = RandomNumberGenerator.Create())
             {
                 rng.GetBytes(salt);
@@ -87,12 +123,10 @@ namespace Controllers
                 salt: salt,
                 prf: KeyDerivationPrf.HMACSHA256,
                 iterationCount: 10000,
-                numBytesRequested: 256 / 8));
+                numBytesRequested: 32));
 
             return $"{Convert.ToBase64String(salt)}:{hashed}";
         }
-
-        // Проверка пароля
         private bool VerifyPassword(string enteredPassword, string storedPasswordHash)
         {
             var parts = storedPasswordHash.Split(':');
@@ -104,18 +138,17 @@ namespace Controllers
                 salt: salt,
                 prf: KeyDerivationPrf.HMACSHA256,
                 iterationCount: 10000,
-                numBytesRequested: 256 / 8));
+                numBytesRequested: 32));
 
             return hash == enteredHash;
         }
-
-        // Генерация JWT токена
         private string GenerateJwtToken(User user)
         {
-            var claims = new[]
+            var claims = new List<Claim>
             {
-                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.UserName),
-                new System.Security.Claims.Claim("WalletAddress", user.WalletAddress)
+                new Claim(ClaimTypes.Name, user.UserName),
+                new Claim("WalletAddress", user.WalletAddress),
+                new Claim("isAdmin", user.IsAdmin.ToString().ToLower()) // передаем isAdmin в токен
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:SecretKey"]));
@@ -125,7 +158,7 @@ namespace Controllers
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddDays(1),
+                expires: DateTime.UtcNow.AddDays(1),
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);

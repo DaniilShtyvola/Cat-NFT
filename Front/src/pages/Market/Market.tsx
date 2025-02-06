@@ -54,6 +54,8 @@ const Market: FC<MarketProps> = () => {
          } catch (error) {
             console.error('Error decoding JWT:', error);
          }
+      } else {
+         setWalletAddress(null);
       }
    }, []);
 
@@ -61,16 +63,21 @@ const Market: FC<MarketProps> = () => {
       setLoading(true);
       try {
          const token = localStorage.getItem("token");
+         const web3 = new Web3(config.GANACHE_URL);
+         const contract = new web3.eth.Contract(CONTRACT_ABI.abi, config.CONTRACT_ADDRESS);
+
+         let catIds;
 
          if (token) {
             const decoded: any = jwtDecode(token);
             const WALLET_ADDRESS = decoded.WalletAddress;
 
-            const web3 = new Web3(config.GANACHE_URL);
-            const contract = new web3.eth.Contract(CONTRACT_ABI.abi, config.CONTRACT_ADDRESS);
+            catIds = await contract.methods.getMarketplaceCats(WALLET_ADDRESS).call();
+         } else {
+            catIds = await contract.methods.getMarketplaceCats("0x0000000000000000000000000000000000000000").call();
+         }
 
-            const catIds: number[] = await contract.methods.getMarketplaceCats(WALLET_ADDRESS).call();
-
+         if (Array.isArray(catIds) && catIds.length > 0) {
             const catsData = await Promise.all(catIds.map(async (catId: number) => {
                const catData = await contract.methods.cats(catId).call();
                return {
@@ -80,6 +87,8 @@ const Market: FC<MarketProps> = () => {
             }));
 
             setCats(catsData);
+         } else {
+            setCats([]);
          }
       } catch (error) {
          console.error("Error fetching marketplace cats:", error);
@@ -208,7 +217,7 @@ const Market: FC<MarketProps> = () => {
                      fontSize: "140%",
                      marginTop: "64px"
                   }}>
-                     <FontAwesomeIcon style={{margin: "7px 7px"}} icon={faFaceSadTear} /> No cats available for sale
+                     <FontAwesomeIcon style={{ margin: "7px 7px" }} icon={faFaceSadTear} /> No cats available for sale
                   </div>
                )
             )}

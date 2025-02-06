@@ -30,7 +30,7 @@ const RegisterPage: FC<RegisterPageProps> = () => {
       e.preventDefault();
 
       try {
-         await axios.post(`${config.API_URL}/Auth/register`, {
+         await axios.post(`${config.API_URL}/Auth/register-user`, {
             userName: username,
             email: email,
             password: password,
