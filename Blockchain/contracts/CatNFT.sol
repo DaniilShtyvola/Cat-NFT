@@ -50,13 +50,13 @@ contract CatNFT {
         ) % 100;
 
         uint8 _quality;
-        if (randomValue < 50) {
+        if (randomValue < 35) {
             _quality = 1;
-        } else if (randomValue < 75) {
+        } else if (randomValue < 60) {
             _quality = 2;
-        } else if (randomValue < 90) {
+        } else if (randomValue < 80) {
             _quality = 3;
-        } else if (randomValue < 97) {
+        } else if (randomValue < 93) {
             _quality = 4;
         } else {
             _quality = 5;
