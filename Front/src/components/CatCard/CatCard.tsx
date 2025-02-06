@@ -13,7 +13,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEthereum } from '@fortawesome/free-brands-svg-icons'
-import { faXmark, faCheck, faStar, faClock, faTag } from '@fortawesome/free-solid-svg-icons'
+import { faXmark, faCheck, faStar, faClock, faTag, faFire, faAngleUp, faAngleDown } from '@fortawesome/free-solid-svg-icons'
 
 import CONTRACT_ABI from '../../CatNFT.json';
 import config from '../../config.ts';
@@ -40,6 +40,8 @@ const CatCard: FC<CatCardProps> = ({ cat, walletAddress }) => {
 
    const web3 = new Web3(config.GANACHE_URL);
    const contract = new web3.eth.Contract(CONTRACT_ABI.abi, config.CONTRACT_ADDRESS);
+
+   const [editMenu, setEditMenu] = useState(false);
 
    const toggleSaleStatus = async () => {
       if (!walletAddress) {
@@ -116,6 +118,35 @@ const CatCard: FC<CatCardProps> = ({ cat, walletAddress }) => {
       }
    };
 
+   const handleEditMenu = async () => {
+      setEditMenu(!editMenu);
+   };
+
+   const handleBurn = async () => {
+      try {
+         setLoading(true);
+
+         const web3 = new Web3(config.GANACHE_URL);
+         const contract = new web3.eth.Contract(CONTRACT_ABI.abi, config.CONTRACT_ADDRESS);
+
+         const gasEstimate = await contract.methods.burnCat(cat.id).estimateGas({ from: walletAddress });
+
+         const gasEstimateString = gasEstimate.toString();
+
+         await contract.methods.burnCat(cat.id).send({
+            from: walletAddress,
+            gas: gasEstimateString
+         });
+
+         const event = new CustomEvent('catChanged', {});
+         window.dispatchEvent(event);
+      } catch (error) {
+         console.error("Error burning cat:", error);
+      } finally {
+         setLoading(false);
+      }
+   };
+
    return (
       <CardWrapper
          style={{
@@ -124,6 +155,7 @@ const CatCard: FC<CatCardProps> = ({ cat, walletAddress }) => {
                   cat.quality == 3 ? '2px solid rgb(63, 72, 204)' :
                      cat.quality == 4 ? '2px solid rgb(184, 61, 186)' :
                         cat.quality == 5 ? '2px solid rgb(255, 205, 24)' : 'none',
+            transition: "height 0.3s"
          }}
       >
          <img
@@ -193,48 +225,91 @@ const CatCard: FC<CatCardProps> = ({ cat, walletAddress }) => {
                }
             </CatPrice>
          )}
-         <CatPrice style={{ fontSize: "90%", marginBottom: "0" }}><GrayText><FontAwesomeIcon style={{ margin: "0 2px 1px 0 " }} icon={faClock} />  </GrayText>{new Date(Number(cat.creationTime) * 1000).toLocaleString()}</CatPrice>
-         <CatPrice>
-            <GrayText>Quality: </GrayText>
-            {Array.from({ length: Number(cat.quality) }, (_, index) => (
-               <FontAwesomeIcon key={index} icon={faStar} style={{ marginLeft: "2px", fontSize: "80%" }} />
-            ))}
-         </CatPrice>
          <div style={{
             display: "flex",
-            justifyContent: "center",
+            justifyContent: "space-between",
+            alignItems: "flex-end"
          }}>
+            <div>
+               <CatPrice>
+                  <GrayText>Quality: </GrayText>
+                  {Array.from({ length: Number(cat.quality) }, (_, index) => (
+                     <FontAwesomeIcon key={index} icon={faStar} style={{ marginLeft: "2px", fontSize: "80%" }} />
+                  ))}
+               </CatPrice>
+               <CatPrice style={{ fontSize: "90%", marginBottom: "0" }}><GrayText><FontAwesomeIcon style={{ margin: "0 2px 1px 0 " }} icon={faClock} />  </GrayText>{new Date(Number(cat.creationTime) * 1000).toLocaleString()}</CatPrice>
+            </div>
             <Button
-               variant={editPrice ? "secondary" : isForSale ? "success" : "danger"}
-               onClick={toggleSaleStatus}
+               variant={"dark"}
+               onClick={handleEditMenu}
                style={{
-                  width: "190px",
-                  marginTop: "8px"
+                  width: "32px",
+                  height: "32px",
+                  padding: "3px 6px"
                }}
-               disabled={loading || editPrice}
             >
-               {loading ? (
-                  <Spinner
-                     animation="border"
-                     style={{ width: "18px", height: "18px" }}
-                  />
+               {editMenu ? (
+                  <FontAwesomeIcon icon={faAngleUp} />
                ) : (
-                  isForSale ? <><FontAwesomeIcon icon={faCheck} /> On sale</> :
-                     <><FontAwesomeIcon icon={faXmark} /> Not on sale</>
+                  <FontAwesomeIcon icon={faAngleDown} />
                )}
             </Button>
-            <Button
-               variant={editPrice ? "success" : "secondary"}
-               onClick={toggleEditPrice}
-               style={{
-                  marginTop: "8px",
-                  marginLeft: "12px"
-               }}
-               disabled={loading}
-            >
-               <><FontAwesomeIcon icon={faTag} /></>
-            </Button>
          </div>
+         {editMenu && (
+            <div style={{
+               display: "flex",
+               justifyContent: "center",
+            }}>
+               <Button
+                  variant={editPrice ? "secondary" : isForSale ? "success" : "danger"}
+                  onClick={toggleSaleStatus}
+                  style={{
+                     width: "190px",
+                     marginTop: "8px"
+                  }}
+                  disabled={loading || editPrice}
+               >
+                  {loading ? (
+                     <Spinner
+                        animation="border"
+                        style={{ width: "18px", height: "18px" }}
+                     />
+                  ) : (
+                     isForSale ? <><FontAwesomeIcon icon={faCheck} /> On sale</> :
+                        <><FontAwesomeIcon icon={faXmark} /> Not on sale</>
+                  )}
+               </Button>
+               <Button
+                  variant={"warning"}
+                  onClick={handleBurn}
+                  style={{
+                     marginTop: "8px",
+                     marginLeft: "12px"
+                  }}
+                  disabled={loading}
+               >
+                  {loading ? (
+                     <Spinner
+                        animation="border"
+                        style={{ width: "18px", height: "18px" }}
+                     />
+                  ) : (
+                     <><FontAwesomeIcon icon={faFire} /></>
+                  )}
+               </Button>
+               <Button
+                  variant={editPrice ? "success" : "secondary"}
+                  onClick={toggleEditPrice}
+                  style={{
+                     marginTop: "8px",
+                     marginLeft: "12px"
+                  }}
+                  disabled={loading}
+               >
+                  <><FontAwesomeIcon icon={faTag} /></>
+               </Button>
+            </div>
+         )}
       </CardWrapper>
    );
 };

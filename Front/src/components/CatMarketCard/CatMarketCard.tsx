@@ -45,7 +45,9 @@ const CatMarketCard: FC<CatMarketCardProps> = ({ cat, walletAddress }) => {
 
    const handleBuy = async () => {
       if (!walletAddress) {
-         console.error("Wallet address is not available");
+         const event = new CustomEvent('notLoggedIn', {});
+         window.dispatchEvent(event);
+
          return;
       }
 

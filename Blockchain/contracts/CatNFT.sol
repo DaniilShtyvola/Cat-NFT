@@ -31,6 +31,7 @@ contract CatNFT {
     event CatListedForSale(uint256 catId, uint256 price);
     event CatDelisted(uint256 catId);
     event CatSold(uint256 catId, address buyer, uint256 price);
+    event CatBurned(uint256 catId);
 
     constructor() {
         owner = payable(msg.sender);
@@ -178,5 +179,39 @@ contract CatNFT {
         address _owner
     ) public view returns (uint256[] memory) {
         return ownerToCats[_owner];
+    }
+
+    function burnCat(uint256 _catId) public {
+        require(
+            catToOwner[_catId] == msg.sender,
+            "You are not the owner of this cat"
+        );
+
+        address ownerOfCat = catToOwner[_catId];
+
+        uint256[] storage ownerCats = ownerToCats[ownerOfCat];
+
+        uint256 indexToRemove;
+        bool found = false;
+        for (uint256 i = 0; i < ownerCats.length; i++) {
+            if (ownerCats[i] == _catId) {
+                indexToRemove = i;
+                found = true;
+                break;
+            }
+        }
+
+        require(found, "Cat not found");
+
+        for (uint256 i = indexToRemove; i < ownerCats.length - 1; i++) {
+            ownerCats[i] = ownerCats[i + 1];
+        }
+
+        ownerCats.pop();
+
+        delete cats[_catId];
+        delete catToOwner[_catId];
+
+        emit CatBurned(_catId);
     }
 }

@@ -10,11 +10,11 @@ import { jwtDecode } from "jwt-decode";
 import CONTRACT_ABI from '../../CatNFT.json';
 import config from '../../config.ts';
 
-import { Spinner, Pagination, Button, Form, InputGroup } from 'react-bootstrap';
+import { Spinner, Pagination, Button, Form, InputGroup, Alert } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faArrowDownWideShort, faArrowUpWideShort, faRotate, faFaceSadTear } from '@fortawesome/free-solid-svg-icons'
+import { faArrowDownWideShort, faArrowUpWideShort, faRotate, faFaceSadTear, faCheck, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons'
 
 import CatMarketCard from "../../components/CatMarketCard/CatMarketCard.tsx";
 
@@ -31,6 +31,9 @@ const Market: FC<MarketProps> = () => {
    const toggleSortOrder = () => {
       setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
    };
+
+   const [message, setMessage] = useState<{ text: string, variant: string } | null>(null);
+   const [isFadingOut, setIsFadingOut] = useState(false);
 
    const indexOfLastCat = currentPage * 12;
    const indexOfFirstCat = indexOfLastCat - 12;
@@ -110,8 +113,38 @@ const Market: FC<MarketProps> = () => {
    }, []);
 
    useEffect(() => {
+      const handleNotLoggedIn = async () => {
+         setMessage({ text: "To buy NFT, you need to log in to your account.", variant: "danger" });
+      };
+
+      window.addEventListener('notLoggedIn', handleNotLoggedIn as EventListener);
+
+      return () => {
+         window.removeEventListener('notLoggedIn', handleNotLoggedIn as EventListener);
+      };
+   }, []);
+
+   useEffect(() => {
       fetchMarketplaceCats();
    }, []);
+
+   useEffect(() => {
+      if (message) {
+         const fadeOutTimer = setTimeout(() => {
+            setIsFadingOut(true);
+         }, 3000);
+
+         const removeMessageTimer = setTimeout(() => {
+            setMessage(null);
+            setIsFadingOut(false);
+         }, 4000);
+
+         return () => {
+            clearTimeout(fadeOutTimer);
+            clearTimeout(removeMessageTimer);
+         };
+      }
+   }, [message]);
 
    const sortedCats = [...cats]
       .sort((a, b) => {
@@ -220,6 +253,34 @@ const Market: FC<MarketProps> = () => {
                      <FontAwesomeIcon style={{ margin: "7px 7px" }} icon={faFaceSadTear} /> No cats available for sale
                   </div>
                )
+            )}
+            {message && (
+               <Alert
+                  style={{
+                     opacity: isFadingOut ? 0 : 1,
+                     height: isFadingOut ? "10px" : "40px",
+                     padding: isFadingOut ? "8px 20px" : "4px 20px",
+                     minWidth: "120px",
+                     textAlign: "center",
+                     marginBottom: 0,
+                     overflow: "hidden",
+                     transition: "opacity 1s ease-in-out, height 1s ease-in-out, padding 1s ease-in-out",
+                     backgroundColor: message.variant == "success" ? "rgb(40, 167, 69)" : "rgb(220, 53, 69)",
+                     color: "white",
+                     display: "flex",
+                     justifyContent: "center",
+                     alignItems: "center",
+                     border: "rgb(33, 37, 41) 1px solid",
+                     marginRight: "64px",
+                     position: "fixed",
+                     bottom: "20px",
+                     left: "20px",
+                     zIndex: 9999
+                  }}
+               >
+                  <FontAwesomeIcon style={{ marginRight: "4px" }} icon={message.variant == "success" ? faCheck : faTriangleExclamation} />
+                  {message.text}
+               </Alert>
             )}
          </PageContainer>
       </PageWrapper>
