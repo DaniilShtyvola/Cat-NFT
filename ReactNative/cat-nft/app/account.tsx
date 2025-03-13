@@ -1,9 +1,11 @@
 import React, { FC, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Image } from 'react-native';
 import { Button } from 'react-native-paper';
+import * as ImagePicker from 'expo-image-picker';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
+import axios from 'axios';
 
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import {
@@ -11,7 +13,9 @@ import {
     faEdit,
     faCheck,
     faXmark,
+    faImage,
     faTriangleExclamation,
+    faUser,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { emitUserLoggedOutEvent } from '../events';
@@ -27,6 +31,8 @@ const Account: FC<AccountPageProps> = () => {
         isAdmin: boolean;
     } | null>(null);
 
+    const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isEditingName, setIsEditingName] = useState(false);
     const [isEditingEmail, setIsEditingEmail] = useState(false);
 
@@ -63,6 +69,8 @@ const Account: FC<AccountPageProps> = () => {
                     });
                     setNewName(username);
                     setNewEmail(email);
+
+                    fetchAvatar(token);
                 } catch (error) {
                     console.error('Error decoding token:', error);
                 }
@@ -141,7 +149,105 @@ const Account: FC<AccountPageProps> = () => {
     };
 
     const handleLogOut = async () => {
+        await AsyncStorage.removeItem('token');
+        setSelectedImage(null);
+        setAvatarBase64(null);
         emitUserLoggedOutEvent();
+    };
+
+    const handleCancelAvatarUpdate = async () => {
+        setSelectedImage(null);
+    };
+
+    const fetchAvatar = async (token: string) => {
+        try {
+            const response = await fetch(`${API_URL}/Auth/get-avatar`, {
+                method: 'GET',
+                headers: {
+                    token: token,
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setAvatarBase64(data.avatarBase64);
+            } else if (response.status === 404) {
+                setAvatarBase64(null);
+            } else {
+                const errorText = await response.text();
+                console.error(
+                    `Failed to fetch avatar (${response.status}):`,
+                    errorText,
+                );
+            }
+        } catch (error) {
+            console.error('Error fetching avatar:', error);
+        }
+    };
+
+    const handleChooseImage = async () => {
+        const { status } =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            return;
+        }
+
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 1,
+            base64: true,
+        });
+
+        if (!result.canceled && result.assets[0].base64) {
+            setSelectedImage(
+                `data:image/jpeg;base64,${result.assets[0].base64}`,
+            );
+        }
+    };
+
+    const handleUpdateAvatar = async () => {
+        if (!selectedImage) return;
+
+        const token = await AsyncStorage.getItem('token');
+        if (!token) return;
+
+        try {
+            const response = await fetch(`${API_URL}/Auth/update-avatar`, {
+                method: 'POST',
+                headers: {
+                    token: token,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(selectedImage),
+            });
+
+            if (response.ok) {
+                setAvatarBase64(selectedImage);
+                setSelectedImage(null);
+                setMessage({
+                    text: 'Avatar updated successfully!',
+                    variant: 'success',
+                });
+            } else if (response.status === 400) {
+                setMessage({
+                    text: 'Avatar size exceeds the limit of 200 KB.',
+                    variant: 'warning',
+                });
+            } else {
+                const errorData = await response.json();
+                setMessage({
+                    text: errorData.message || 'Failed to update avatar.',
+                    variant: 'danger',
+                });
+            }
+        } catch (error) {
+            setMessage({
+                text: 'An error occurred while updating the avatar.',
+                variant: 'danger',
+            });
+        }
     };
 
     useEffect(() => {
@@ -166,6 +272,74 @@ const Account: FC<AccountPageProps> = () => {
         <View style={styles.container}>
             {userInfo ? (
                 <>
+                    <View style={styles.avatarContainer}>
+                        <Text style={styles.label}>Avatar icon:</Text>
+                        <View style={styles.avatarButtonsContainer}>
+                            {selectedImage ? (
+                                <>
+                                    <Button
+                                        onPress={handleUpdateAvatar}
+                                        style={styles.confirmButton}
+                                    >
+                                        <FontAwesomeIcon
+                                            style={styles.editIcon}
+                                            size={18}
+                                            icon={faCheck}
+                                        />
+                                    </Button>
+                                    <Button
+                                        onPress={handleCancelAvatarUpdate}
+                                        style={styles.cancelButton}
+                                    >
+                                        <FontAwesomeIcon
+                                            style={styles.editIcon}
+                                            size={18}
+                                            icon={faXmark}
+                                        />
+                                    </Button>
+                                </>
+                            ) : (
+                                <Button onPress={handleChooseImage}>
+                                    <FontAwesomeIcon
+                                        style={styles.editIcon}
+                                        size={18}
+                                        icon={faImage}
+                                    />
+                                </Button>
+                            )}
+                        </View>
+                    </View>
+                    <View style={styles.avatarContainer}>
+                        <View style={styles.avatarImageContainer}>
+                            {avatarBase64 ? (
+                                <Image
+                                    source={{ uri: avatarBase64 }}
+                                    style={styles.avatar}
+                                />
+                            ) : (
+                                <View style={styles.falseIconContainer}>
+                                    <FontAwesomeIcon
+                                        style={styles.falseIcon}
+                                        size={64}
+                                        icon={faUser}
+                                    />
+                                    <Text style={styles.label}>No icon</Text>
+                                </View>
+                            )}
+                            {selectedImage && (
+                                <Text style={styles.label}>Old avatar</Text>
+                            )}
+                        </View>
+                        {selectedImage && (
+                            <View style={styles.avatarImageContainer}>
+                                <Image
+                                    source={{ uri: selectedImage }}
+                                    style={styles.avatar}
+                                />
+                                <Text style={styles.label}>New avatar</Text>
+                            </View>
+                        )}
+                    </View>
                     <View style={styles.infoContainer}>
                         <Text style={styles.label}>Username:</Text>
                         {isEditingName ? (
@@ -325,21 +499,28 @@ const styles = StyleSheet.create({
         padding: 16,
         backgroundColor: 'rgb(23, 25, 27)',
     },
+    avatarButtonsContainer: {
+        flexDirection: 'row',
+        gap: 10,
+    },
     avatarContainer: {
         alignItems: 'center',
-        marginBottom: 20,
+        flexDirection: 'row',
+        marginBottom: 10,
+        justifyContent: 'space-between',
     },
     avatar: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
+        width: 165,
+        height: 165,
+        borderRadius: 180,
+        marginBottom: 6,
     },
     avatarPlaceholder: {
         fontSize: 16,
         color: 'white',
     },
-    avatarButton: {
-        marginTop: 10,
+    avatarImageContainer: {
+        alignItems: 'center',
     },
     infoContainer: {
         marginBottom: 20,
@@ -356,6 +537,19 @@ const styles = StyleSheet.create({
     value: {
         fontSize: 18,
         color: 'white',
+    },
+    falseIcon: {
+        marginBottom: 8,
+        color: 'rgb(128, 128, 128)',
+    },
+    falseIconContainer: {
+        width: 165,
+        height: 165,
+        borderRadius: 180,
+        borderWidth: 2,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderColor: 'rgb(128, 128, 128)',
     },
     input: {
         fontSize: 18,

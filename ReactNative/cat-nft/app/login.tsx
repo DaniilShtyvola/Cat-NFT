@@ -72,7 +72,6 @@ const Login: FC<LoginProps> = () => {
             setMessage({ text: 'Login successful!', variant: 'success' });
         } catch (error) {
             setMessage({ text: 'Login failed.', variant: 'danger' });
-            console.error('Error during login:', error);
         }
     };
 
@@ -94,9 +93,10 @@ const Login: FC<LoginProps> = () => {
             setUsername('');
             setEmail('');
             setPassword('');
+
+            setIsLogin(true);
         } catch (error) {
             setMessage({ text: 'Registration failed.', variant: 'danger' });
-            console.error('Error during registration:', error);
         }
     };
 
@@ -228,7 +228,10 @@ const Login: FC<LoginProps> = () => {
                         }
                         color="white"
                     />
-                    <Text style={styles.alertText}>{message.text}</Text>
+                    <Text style={styles.alertText}>
+                        {'  '}
+                        {message.text}
+                    </Text>
                 </View>
             )}
         </ScrollView>
@@ -278,6 +281,7 @@ const styles = StyleSheet.create({
     },
     alertText: {
         color: 'white',
+        marginLeft: 8,
     },
 });
 

@@ -45,8 +45,14 @@ const Market: FC<MarketProps> = () => {
             setMessage({ text, variant });
         };
 
+        const onUserLoggedOut = () => {
+            setWalletAddress(null);
+        };
+
         customEventEmitter.on(CustomEvents.SHOW_MESSAGE, showMessage);
         customEventEmitter.on(CustomEvents.CAT_BOUGHT, fetchMarketplaceCats);
+        customEventEmitter.on(CustomEvents.USER_LOGGED_OUT, onUserLoggedOut);
+        customEventEmitter.on(CustomEvents.USER_LOGGED_IN, fetchToken);
 
         return () => {
             customEventEmitter.off(CustomEvents.SHOW_MESSAGE, showMessage);
@@ -54,23 +60,29 @@ const Market: FC<MarketProps> = () => {
                 CustomEvents.CAT_BOUGHT,
                 fetchMarketplaceCats,
             );
+            customEventEmitter.off(
+                CustomEvents.USER_LOGGED_OUT,
+                onUserLoggedOut,
+            );
+            customEventEmitter.off(CustomEvents.USER_LOGGED_IN, fetchToken);
         };
     }, []);
 
-    useEffect(() => {
-        const fetchToken = async () => {
-            const token = await AsyncStorage.getItem('token');
-            if (token) {
-                try {
-                    const decoded: any = jwtDecode(token);
-                    setWalletAddress(decoded.WalletAddress);
-                } catch (error) {
-                    console.error('Error decoding JWT:', error);
-                }
-            } else {
-                setWalletAddress(null);
+    const fetchToken = async () => {
+        const token = await AsyncStorage.getItem('token');
+        if (token) {
+            try {
+                const decoded: any = jwtDecode(token);
+                setWalletAddress(decoded.WalletAddress);
+            } catch (error) {
+                console.error('Error decoding JWT:', error);
             }
-        };
+        } else {
+            setWalletAddress(null);
+        }
+    };
+
+    useEffect(() => {
         fetchToken();
         fetchMarketplaceCats();
     }, []);
@@ -274,7 +286,9 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 20,
         left: 20,
-        padding: 10,
+        padding: 12,
+        paddingRight: 16,
+        paddingLeft: 16,
         borderRadius: 5,
         flexDirection: 'row',
         alignItems: 'center',

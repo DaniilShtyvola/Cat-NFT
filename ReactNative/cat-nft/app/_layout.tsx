@@ -17,7 +17,7 @@ import {
     faQuestion,
     faRightToBracket,
     faShop,
-    faTable,
+    faCat,
     faUser,
 } from '@fortawesome/free-solid-svg-icons';
 
@@ -56,7 +56,6 @@ export default function RootLayout() {
         };
 
         const onUserLoggedOut = () => {
-            AsyncStorage.removeItem('token');
             setNickname(null);
         };
 
@@ -92,7 +91,7 @@ export default function RootLayout() {
                         if (route.name === 'Market') {
                             iconName = faShop;
                         } else if (route.name === 'Cats') {
-                            iconName = faTable;
+                            iconName = faCat;
                         } else if (route.name === 'Login') {
                             iconName = faRightToBracket;
                         } else if (route.name === 'Account') {

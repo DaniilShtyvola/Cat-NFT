@@ -86,7 +86,7 @@ namespace Controllers
                 UserName = "DanyaAdmin",
                 Email = email,
                 PasswordHash = HashPassword("Mh8A0*"),
-                WalletAddress = "0xB6d96DdD0231040509E58040ea05d4C6b0c92681",
+                WalletAddress = "0x4C3956f913A5aED2F411d2Df9AB68D34ba825129",
                 IsAdmin = true,
                 CreatedAt = DateTime.UtcNow,
                 AvatarBase64 = ""

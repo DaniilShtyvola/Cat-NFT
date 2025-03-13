@@ -44,7 +44,10 @@ const CatMarketCard: FC<CatMarketCardProps> = ({ cat, walletAddress }) => {
 
     const handleBuy = async () => {
         if (!walletAddress) {
-            alert('To buy NFT, you need to log in to your account.');
+            emitShowMessage(
+                'To buy NFT, you need to log in to your account.',
+                'danger',
+            );
             return;
         }
 
