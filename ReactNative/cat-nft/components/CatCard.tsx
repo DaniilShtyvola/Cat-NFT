@@ -10,8 +10,10 @@ import {
 } from 'react-native';
 import { Button, Card } from 'react-native-paper';
 
+import Web3 from 'web3';
+
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faEthereum } from '@fortawesome/free-brands-svg-icons'
+import { faEthereum } from '@fortawesome/free-brands-svg-icons';
 import {
     faXmark,
     faCheck,
@@ -22,10 +24,8 @@ import {
     faAngleUp,
     faAngleDown,
 } from '@fortawesome/free-solid-svg-icons';
-import Web3 from 'web3';
 
 import { emitShowMessage, emitCatPriceChanged } from '../events';
-
 import CONTRACT_ABI from '../contracts/CatNFT.json';
 import { GANACHE_URL, CONTRACT_ADDRESS } from '../config';
 
@@ -44,7 +44,9 @@ interface CatCardProps {
 
 const CatCard: FC<CatCardProps> = ({ cat, walletAddress }) => {
     const [editPrice, setEditPrice] = useState(false);
-    const [newPrice, setNewPrice] = useState<string>((parseFloat(cat.price) / 1e18).toString());
+    const [newPrice, setNewPrice] = useState<string>(
+        (parseFloat(cat.price) / 1e18).toString(),
+    );
     const [isForSale, setIsForSale] = useState(cat.isForSale);
     const [loading, setLoading] = useState(false);
     const [editMenu, setEditMenu] = useState(false);
@@ -63,14 +65,18 @@ const CatCard: FC<CatCardProps> = ({ cat, walletAddress }) => {
 
             const parsedPrice = parseFloat(newPrice);
             if (parsedPrice == 0) {
-                emitShowMessage("First you need to set a price.", "danger");
+                emitShowMessage('First you need to set a price.', 'danger');
                 return;
             }
 
             if (!isForSale) {
-                await contract.methods.listForSale(cat.id, cat.price).send({ from: walletAddress });
+                await contract.methods
+                    .listForSale(cat.id, cat.price)
+                    .send({ from: walletAddress });
             } else {
-                await contract.methods.delist(cat.id).send({ from: walletAddress });
+                await contract.methods
+                    .delist(cat.id)
+                    .send({ from: walletAddress });
             }
 
             setIsForSale(!isForSale);
@@ -97,7 +103,7 @@ const CatCard: FC<CatCardProps> = ({ cat, walletAddress }) => {
 
         const parsedPrice = parseFloat(newPrice);
         if (parsedPrice <= 0 || isNaN(parsedPrice)) {
-            console.error('Price must be greater than zero!');
+            emitShowMessage('Price must be greater than zero!', 'danger');
             return;
         }
 
@@ -106,7 +112,9 @@ const CatCard: FC<CatCardProps> = ({ cat, walletAddress }) => {
 
             const priceInWei = web3.utils.toWei(newPrice, 'ether');
 
-            await contract.methods.updatePrice(cat.id, priceInWei).send({ from: walletAddress });
+            await contract.methods
+                .updatePrice(cat.id, priceInWei)
+                .send({ from: walletAddress });
 
             setEditPrice(false);
 
@@ -126,7 +134,9 @@ const CatCard: FC<CatCardProps> = ({ cat, walletAddress }) => {
         try {
             setLoading(true);
 
-            const gasEstimate = await contract.methods.burnCat(cat.id).estimateGas({ from: walletAddress });
+            const gasEstimate = await contract.methods
+                .burnCat(cat.id)
+                .estimateGas({ from: walletAddress });
 
             await contract.methods.burnCat(cat.id).send({
                 from: walletAddress,
@@ -140,7 +150,12 @@ const CatCard: FC<CatCardProps> = ({ cat, walletAddress }) => {
     };
 
     return (
-        <Card style={[styles.card, { borderColor: getBorderColor(Number(cat.quality)) }]}>
+        <Card
+            style={[
+                styles.card,
+                { borderColor: getBorderColor(Number(cat.quality)) },
+            ]}
+        >
             <Image source={{ uri: cat.imageUrl }} style={styles.image} />
             <Card.Content>
                 <Text style={styles.catName}>
@@ -166,19 +181,26 @@ const CatCard: FC<CatCardProps> = ({ cat, walletAddress }) => {
                             {loading ? (
                                 <ActivityIndicator size="small" color="#fff" />
                             ) : (
-                                <FontAwesomeIcon icon={faCheck} size={24} style={styles.confirmIcon} />
+                                <FontAwesomeIcon
+                                    icon={faCheck}
+                                    size={24}
+                                    style={styles.confirmIcon}
+                                />
                             )}
                         </Button>
                     </View>
                 ) : (
                     <Text style={styles.catPrice}>
-                        {newPrice === "0" || newPrice === "" ? (
+                        {newPrice === '0' || newPrice === '' ? (
                             <Text style={styles.grayText}>No price yet</Text>
                         ) : (
                             <>
                                 <Text style={styles.grayText}>Price: </Text>
                                 <Text style={styles.whiteText}>{newPrice}</Text>
-                                <FontAwesomeIcon icon={faEthereum} color="white" />
+                                <FontAwesomeIcon
+                                    icon={faEthereum}
+                                    color="white"
+                                />
                             </>
                         )}
                     </Text>
@@ -187,17 +209,32 @@ const CatCard: FC<CatCardProps> = ({ cat, walletAddress }) => {
                     <Text style={styles.grayText}>Quality: </Text>
                     {Array.from({ length: Number(cat.quality) }, (_, index) => (
                         <View key={index}>
-                            <FontAwesomeIcon icon={faStar} style={styles.starIcon} />
+                            <FontAwesomeIcon
+                                icon={faStar}
+                                style={styles.starIcon}
+                            />
                         </View>
                     ))}
                 </Text>
                 <View style={styles.timeContainer}>
                     <Text style={styles.creationTime}>
-                        <FontAwesomeIcon icon={faClock} style={styles.clockIcon} />{'  '}
-                        {new Date(Number(cat.creationTime) * 1000).toLocaleString()}
+                        <FontAwesomeIcon
+                            icon={faClock}
+                            style={styles.clockIcon}
+                        />
+                        {'  '}
+                        {new Date(
+                            Number(cat.creationTime) * 1000,
+                        ).toLocaleString()}
                     </Text>
-                    <TouchableOpacity onPress={handleEditMenu} style={styles.editMenuButton}>
-                        <FontAwesomeIcon style={styles.editMenuIcon} icon={editMenu ? faAngleUp : faAngleDown} />
+                    <TouchableOpacity
+                        onPress={handleEditMenu}
+                        style={styles.editMenuButton}
+                    >
+                        <FontAwesomeIcon
+                            style={styles.editMenuIcon}
+                            icon={editMenu ? faAngleUp : faAngleDown}
+                        />
                     </TouchableOpacity>
                 </View>
                 {editMenu && (
@@ -208,18 +245,32 @@ const CatCard: FC<CatCardProps> = ({ cat, walletAddress }) => {
                             disabled={loading || editPrice}
                             style={[
                                 styles.saleButton,
-                                { backgroundColor: isForSale ? 'rgb(25, 135, 84)' : 'rgb(220, 53, 69)' }
+                                {
+                                    backgroundColor: isForSale
+                                        ? 'rgb(25, 135, 84)'
+                                        : 'rgb(220, 53, 69)',
+                                },
                             ]}
                         >
                             {loading ? (
                                 <ActivityIndicator size="small" color="black" />
                             ) : isForSale ? (
                                 <>
-                                    <FontAwesomeIcon style={styles.saleIcon} icon={faCheck} size={24} /> On sale
+                                    <FontAwesomeIcon
+                                        style={styles.saleIcon}
+                                        icon={faCheck}
+                                        size={24}
+                                    />{' '}
+                                    On sale
                                 </>
                             ) : (
                                 <>
-                                    <FontAwesomeIcon style={styles.saleIcon} icon={faXmark} size={24} /> Not on sale
+                                    <FontAwesomeIcon
+                                        style={styles.saleIcon}
+                                        icon={faXmark}
+                                        size={24}
+                                    />{' '}
+                                    Not on sale
                                 </>
                             )}
                         </Button>
@@ -241,10 +292,18 @@ const CatCard: FC<CatCardProps> = ({ cat, walletAddress }) => {
                             disabled={loading}
                             style={[
                                 styles.editPriceButton,
-                                { backgroundColor: editPrice ? 'rgb(25, 135, 84)' : 'rgb(108, 117, 125)' }
+                                {
+                                    backgroundColor: editPrice
+                                        ? 'rgb(25, 135, 84)'
+                                        : 'rgb(108, 117, 125)',
+                                },
                             ]}
                         >
-                            <FontAwesomeIcon style={styles.editPriceIcon} size={24} icon={faTag} />
+                            <FontAwesomeIcon
+                                style={styles.editPriceIcon}
+                                size={24}
+                                icon={faTag}
+                            />
                         </Button>
                     </View>
                 )}
@@ -289,7 +348,7 @@ const styles = StyleSheet.create({
         marginTop: 12,
         fontWeight: 'bold',
         marginBottom: 8,
-        color: "white"
+        color: 'white',
     },
     grayText: {
         color: 'rgb(128, 128, 128)',
@@ -300,7 +359,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     editMenuIcon: {
-        color: 'white'
+        color: 'white',
     },
     priceInput: {
         flex: 1,
@@ -330,10 +389,10 @@ const styles = StyleSheet.create({
     starIcon: {
         marginLeft: 2,
         fontSize: 14,
-        color: 'white'
+        color: 'white',
     },
     editMenuButton: {
-        padding: 8
+        padding: 8,
     },
     creationTime: {
         fontSize: 14,
@@ -342,7 +401,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     clockIcon: {
-        color: 'rgb(128, 128, 128)'
+        color: 'rgb(128, 128, 128)',
     },
     editMenu: {
         flexDirection: 'row',
@@ -360,18 +419,18 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgb(220, 53, 69)',
     },
     confirmIcon: {
-        color: 'white'
+        color: 'white',
     },
     editPriceButton: {
         width: 20,
-        backgroundColor: 'rgb(108, 117, 125)'
+        backgroundColor: 'rgb(108, 117, 125)',
     },
     editPriceIcon: {
         color: 'white',
     },
     saleIcon: {
-        color: 'white'
-    }
+        color: 'white',
+    },
 });
 
 export default CatCard;

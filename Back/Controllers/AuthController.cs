@@ -66,7 +66,8 @@ namespace Controllers
                 PasswordHash = passwordHash,
                 WalletAddress = request.WalletAddress,
                 IsAdmin = isAdmin,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                AvatarBase64 = ""
             };
 
             await _context.Users.AddAsync(user);
@@ -78,16 +79,17 @@ namespace Controllers
         [HttpPost("create-admin")]
         public async Task<IActionResult> CreateAdmin()
         {
-            var email = "danyaadmin64@gmail.com";
+            var email = "danya64@gmail.com";
 
             var admin = new User
             {
                 UserName = "DanyaAdmin",
                 Email = email,
-                PasswordHash = HashPassword("Mh8ASf@6*"),
-                WalletAddress = "0x10521FC57d9d03dda01A5024723128e3502128c8",
+                PasswordHash = HashPassword("Mh8A0*"),
+                WalletAddress = "0xB6d96DdD0231040509E58040ea05d4C6b0c92681",
                 IsAdmin = true,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                AvatarBase64 = ""
             };
 
             await _context.Users.AddAsync(admin);
@@ -108,6 +110,24 @@ namespace Controllers
             catch
             {
                 return false;
+            }
+        }
+        private async Task<User> GetUserFromToken(string token)
+        {
+            try
+            {
+                var handler = new JwtSecurityTokenHandler();
+                var jwtToken = handler.ReadJwtToken(token);
+
+                var walletClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "WalletAddress");
+                if (walletClaim == null)
+                    return null;
+
+                return await _context.Users.FirstOrDefaultAsync(u => u.WalletAddress == walletClaim.Value);
+            }
+            catch
+            {
+                return null;
             }
         }
         private string HashPassword(string password)
@@ -147,6 +167,7 @@ namespace Controllers
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.UserName),
+                new Claim(ClaimTypes.Email, user.Email),
                 new Claim("WalletAddress", user.WalletAddress),
                 new Claim("isAdmin", user.IsAdmin.ToString().ToLower())
             };
@@ -163,10 +184,66 @@ namespace Controllers
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-        [HttpGet("test")]
-        public IActionResult Get()
+        [HttpPost("update-avatar")]
+        public async Task<IActionResult> UpdateAvatar([FromHeader] string token, [FromBody] string avatarBase64)
         {
-            return Ok("It's OK!");
+            var user = await GetUserFromToken(token);
+            if (user == null)
+                return Unauthorized("Invalid token.");
+
+            int maxSizeInBytes = 200 * 1024;
+            int base64Length = avatarBase64.Length;
+            int dataSizeInBytes = (base64Length * 3) / 4;
+
+            if (dataSizeInBytes > maxSizeInBytes)
+                return BadRequest("Avatar size exceeds the limit of 200 KB.");
+
+            user.AvatarBase64 = avatarBase64;
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "Avatar updated successfully." });
+        }
+        [HttpPost("update-username")]
+        public async Task<IActionResult> UpdateUsername([FromHeader] string token, [FromBody] string newUsername)
+        {
+            var user = await GetUserFromToken(token);
+            if (user == null)
+                return Unauthorized("Invalid token.");
+
+            user.UserName = newUsername;
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "Username updated successfully." });
+        }
+        [HttpPost("update-email")]
+        public async Task<IActionResult> UpdateEmail([FromHeader] string token, [FromBody] string newEmail)
+        {
+            var user = await GetUserFromToken(token);
+            if (user == null)
+                return Unauthorized("Invalid token.");
+
+            if (await _context.Users.AnyAsync(u => u.Email == newEmail))
+                return BadRequest("A user with this email already exists.");
+
+            user.Email = newEmail;
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "Email updated successfully." });
+        }
+        [HttpGet("get-avatar")]
+        public async Task<IActionResult> GetAvatar([FromHeader] string token)
+        {
+            var user = await GetUserFromToken(token);
+            if (user == null)
+                return Unauthorized("Invalid token.");
+
+            if (string.IsNullOrEmpty(user.AvatarBase64))
+                return NotFound("Avatar not found.");
+
+            return Ok(new { AvatarBase64 = user.AvatarBase64 });
         }
     }
 }

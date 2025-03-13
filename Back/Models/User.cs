@@ -7,4 +7,5 @@
     public string WalletAddress { get; set; }
     public bool IsAdmin { get; set; } = false;
     public DateTime CreatedAt { get; set; }
+    public string AvatarBase64 { get; set; }
 }

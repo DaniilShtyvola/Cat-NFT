@@ -1,26 +1,18 @@
 import React, { FC, useState } from 'react';
-import {
-    View,
-    Text,
-    Image,
-    TouchableOpacity,
-    StyleSheet,
-    ActivityIndicator,
-    TextInput,
-} from 'react-native';
+import { View, Text, Image, StyleSheet, ActivityIndicator } from 'react-native';
 import { Button, Card } from 'react-native-paper';
 
+import Web3 from 'web3';
+
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faEthereum } from '@fortawesome/free-brands-svg-icons'
+import { faEthereum } from '@fortawesome/free-brands-svg-icons';
 import {
     faStar,
     faClock,
-    faCartShopping
+    faCartShopping,
 } from '@fortawesome/free-solid-svg-icons';
-import Web3 from 'web3';
 
-import { emitShowMessage, emitCatPriceChanged, emitCatBought } from '../events';
-
+import { emitShowMessage, emitCatBought } from '../events';
 import CONTRACT_ABI from '../contracts/CatNFT.json';
 import { GANACHE_URL, CONTRACT_ADDRESS } from '../config';
 
@@ -76,6 +68,7 @@ const CatMarketCard: FC<CatMarketCardProps> = ({ cat, walletAddress }) => {
             setIsForSale(false);
 
             emitCatBought();
+            emitShowMessage('Succesfully bought NFT!', 'success');
         } catch (error) {
             console.error('Error buying cat:', error);
         } finally {
@@ -84,7 +77,12 @@ const CatMarketCard: FC<CatMarketCardProps> = ({ cat, walletAddress }) => {
     };
 
     return (
-        <Card style={[styles.card, { borderColor: getBorderColor(Number(cat.quality)) }]}>
+        <Card
+            style={[
+                styles.card,
+                { borderColor: getBorderColor(Number(cat.quality)) },
+            ]}
+        >
             <Image source={{ uri: cat.imageUrl }} style={styles.image} />
             <Card.Content>
                 <Text style={styles.catName}>
@@ -100,12 +98,16 @@ const CatMarketCard: FC<CatMarketCardProps> = ({ cat, walletAddress }) => {
                     <Text style={styles.grayText}>Quality: </Text>
                     {Array.from({ length: Number(cat.quality) }, (_, index) => (
                         <View key={index}>
-                            <FontAwesomeIcon icon={faStar} style={styles.starIcon} />
+                            <FontAwesomeIcon
+                                icon={faStar}
+                                style={styles.starIcon}
+                            />
                         </View>
                     ))}
                 </Text>
                 <Text style={styles.creationTime}>
-                    <FontAwesomeIcon icon={faClock} style={styles.clockIcon} />{'  '}
+                    <FontAwesomeIcon icon={faClock} style={styles.clockIcon} />
+                    {'  '}
                     {new Date(Number(cat.creationTime) * 1000).toLocaleString()}
                 </Text>
                 <Button
@@ -118,7 +120,11 @@ const CatMarketCard: FC<CatMarketCardProps> = ({ cat, walletAddress }) => {
                         <ActivityIndicator size="small" color="#fff" />
                     ) : (
                         <>
-                            <FontAwesomeIcon icon={faCartShopping} style={styles.buyIcon}/> {"  "}Buy
+                            <FontAwesomeIcon
+                                icon={faCartShopping}
+                                style={styles.buyIcon}
+                            />{' '}
+                            {'  '}Buy
                         </>
                     )}
                 </Button>
@@ -153,7 +159,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     buyIcon: {
-        color: 'white'
+        color: 'white',
     },
     image: {
         width: '100%',
@@ -166,7 +172,7 @@ const styles = StyleSheet.create({
         marginTop: 12,
         fontWeight: 'bold',
         marginBottom: 8,
-        color: "white"
+        color: 'white',
     },
     grayText: {
         color: 'rgb(128, 128, 128)',
@@ -177,7 +183,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     editMenuIcon: {
-        color: 'white'
+        color: 'white',
     },
     priceInput: {
         flex: 1,
@@ -197,11 +203,11 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     clockIcon: {
-        color: 'rgb(128, 128, 128)'
+        color: 'rgb(128, 128, 128)',
     },
     buyButton: {
         marginTop: 12,
-        backgroundColor: 'rgb(25, 135, 84)'
+        backgroundColor: 'rgb(25, 135, 84)',
     },
     whiteText: {
         color: 'white',
@@ -209,22 +215,22 @@ const styles = StyleSheet.create({
     timeContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
     },
     starIcon: {
         marginLeft: 2,
         fontSize: 14,
-        color: 'white'
+        color: 'white',
     },
     editMenuButton: {
-        padding: 8
+        padding: 8,
     },
     creationTime: {
         fontSize: 14,
         color: 'white',
         flexDirection: 'row',
         alignItems: 'center',
-    }
+    },
 });
 
 export default CatMarketCard;

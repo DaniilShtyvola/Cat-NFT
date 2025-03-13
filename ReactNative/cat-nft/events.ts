@@ -7,7 +7,8 @@ export const CustomEvents = {
     USER_LOGGED_OUT: 'userLoggedOut',
     SHOW_MESSAGE: 'showMessage',
     CAT_PRICE_CHANGED: 'catPriceChanged',
-    CAT_BOUGHT: 'catBought'
+    CAT_BOUGHT: 'catBought',
+    CAT_BURNED: 'catBurned',
 };
 
 export const emitUserLoggedInEvent = (username: string) => {
@@ -28,4 +29,8 @@ export const emitCatPriceChanged = () => {
 
 export const emitCatBought = () => {
     customEventEmitter.emit(CustomEvents.CAT_BOUGHT);
+};
+
+export const emitCatBurned = () => {
+    customEventEmitter.emit(CustomEvents.CAT_BURNED);
 };

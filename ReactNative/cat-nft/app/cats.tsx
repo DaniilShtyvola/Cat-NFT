@@ -1,16 +1,14 @@
 import React, { FC, useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet,
-    ActivityIndicator,
-    Alert,
-    FlatList,
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { Button, IconButton } from 'react-native-paper';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import 'react-native-get-random-values';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
+import axios from 'axios';
+import Web3 from 'web3';
+
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import {
     faCheck,
     faXmark,
@@ -19,18 +17,16 @@ import {
     faArrowUpWideShort,
     faPaw,
     faTriangleExclamation,
+    faFaceSadTear,
 } from '@fortawesome/free-solid-svg-icons';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import Web3 from 'web3';
-import { jwtDecode } from 'jwt-decode';
+import { customEventEmitter, CustomEvents } from '../events';
 import CONTRACT_ABI from '../contracts/CatNFT.json';
 import { GANACHE_URL, CONTRACT_ADDRESS, CAT_API_KEY } from '../config';
-import { customEventEmitter, CustomEvents } from '../events';
+
 import CatCard from '../components/CatCard';
 
-interface CatsPageProps { }
+interface CatsPageProps {}
 
 const Cats: FC<CatsPageProps> = () => {
     const [pageLoading, setPageLoading] = useState(false);
@@ -39,7 +35,10 @@ const Cats: FC<CatsPageProps> = () => {
     const [walletAddress, setWalletAddress] = useState<string | null>(null);
     const [cats, setCats] = useState<any[]>([]);
 
-    const [message, setMessage] = useState<{ text: string; variant: string } | null>(null);
+    const [message, setMessage] = useState<{
+        text: string;
+        variant: string;
+    } | null>(null);
     const [isFadingOut, setIsFadingOut] = useState(false);
 
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -98,13 +97,20 @@ const Cats: FC<CatsPageProps> = () => {
                 const WALLET_ADDRESS = decoded.WalletAddress;
 
                 const web3 = new Web3(GANACHE_URL);
-                const contract = new web3.eth.Contract(CONTRACT_ABI.abi, CONTRACT_ADDRESS);
+                const contract = new web3.eth.Contract(
+                    CONTRACT_ABI.abi,
+                    CONTRACT_ADDRESS,
+                );
 
-                const catIds: number[] = await contract.methods.getCatsByOwner(WALLET_ADDRESS).call();
+                const catIds: number[] = await contract.methods
+                    .getCatsByOwner(WALLET_ADDRESS)
+                    .call();
 
                 const catsData = await Promise.all(
                     catIds.map(async (catId: number) => {
-                        const catData = await contract.methods.cats(catId).call();
+                        const catData = await contract.methods
+                            .cats(catId)
+                            .call();
                         return {
                             id: catId,
                             ...catData,
@@ -150,17 +156,30 @@ const Cats: FC<CatsPageProps> = () => {
                     : 'Unknown';
 
             const temperamentWords = temperament.split(',');
-            const randomTemperament = temperamentWords[Math.floor(Math.random() * temperamentWords.length)].trim();
-            const formattedTemperament = randomTemperament.charAt(0).toUpperCase() + randomTemperament.slice(1);
+            const randomTemperament =
+                temperamentWords[
+                    Math.floor(Math.random() * temperamentWords.length)
+                ].trim();
+            const formattedTemperament =
+                randomTemperament.charAt(0).toUpperCase() +
+                randomTemperament.slice(1);
 
-            const formattedBreed = breed.includes(' ') ? breed.split(' ')[1] : breed;
+            const formattedBreed = breed.includes(' ')
+                ? breed.split(' ')[1]
+                : breed;
 
             const generatedCatName = `${formattedTemperament} ${formattedBreed}`;
 
             const web3 = new Web3(GANACHE_URL);
-            const contract = new web3.eth.Contract(CONTRACT_ABI.abi, CONTRACT_ADDRESS);
+            const contract = new web3.eth.Contract(
+                CONTRACT_ABI.abi,
+                CONTRACT_ADDRESS,
+            );
 
-            const transaction = contract.methods.createCat(generatedImageUrl, generatedCatName);
+            const transaction = contract.methods.createCat(
+                generatedImageUrl,
+                generatedCatName,
+            );
 
             if (walletAddress) {
                 try {
@@ -173,17 +192,28 @@ const Cats: FC<CatsPageProps> = () => {
                         gas: gas.toString(),
                     });
                 } catch (error) {
-                    const errorMessage = (error as Error).message || 'An unknown error occurred.';
+                    const errorMessage =
+                        (error as Error).message ||
+                        'An unknown error occurred.';
                     setMessage({ text: errorMessage, variant: 'danger' });
                 }
             } else {
-                setMessage({ text: 'Wallet address is not available.', variant: 'danger' });
+                setMessage({
+                    text: 'Wallet address is not available.',
+                    variant: 'danger',
+                });
             }
 
-            setMessage({ text: 'NFT minted successfully!', variant: 'success' });
+            setMessage({
+                text: 'NFT minted successfully!',
+                variant: 'success',
+            });
             fetchCats();
         } catch (err) {
-            setMessage({ text: 'Error during NFT minting.', variant: 'danger' });
+            setMessage({
+                text: 'Error during NFT minting.',
+                variant: 'danger',
+            });
         } finally {
             setMintLoading(false);
         }
@@ -238,7 +268,11 @@ const Cats: FC<CatsPageProps> = () => {
                         <FontAwesomeIcon
                             size={20}
                             style={styles.sortIcon}
-                            icon={sortOrder === 'asc' ? faArrowUpWideShort : faArrowDownWideShort}
+                            icon={
+                                sortOrder === 'asc'
+                                    ? faArrowUpWideShort
+                                    : faArrowDownWideShort
+                            }
                         />
                     )}
                     onPress={toggleSortOrder}
@@ -248,7 +282,13 @@ const Cats: FC<CatsPageProps> = () => {
                         <FontAwesomeIcon
                             size={20}
                             style={styles.sortIcon}
-                            icon={filter === 0 ? faShuffle : filter === 1 ? faCheck : faXmark}
+                            icon={
+                                filter === 0
+                                    ? faShuffle
+                                    : filter === 1
+                                      ? faCheck
+                                      : faXmark
+                            }
                         />
                     )}
                     onPress={toggleFilter}
@@ -264,7 +304,10 @@ const Cats: FC<CatsPageProps> = () => {
                 >
                     {!mintLoading && (
                         <>
-                            <FontAwesomeIcon style={styles.mintIcon} icon={faPaw} />
+                            <FontAwesomeIcon
+                                style={styles.mintIcon}
+                                icon={faPaw}
+                            />
                         </>
                     )}
                     {'  '}Mint NFT
@@ -276,13 +319,25 @@ const Cats: FC<CatsPageProps> = () => {
     return (
         <View style={styles.container}>
             <FlatList
-                data={sortedCats} // Используем отсортированный массив
+                data={sortedCats}
                 keyExtractor={(item) => item.id.toString()}
                 numColumns={1}
                 ListHeaderComponent={renderHeader}
                 renderItem={({ item }) => (
                     <CatCard cat={item} walletAddress={walletAddress || ''} />
                 )}
+                ListEmptyComponent={
+                    <View style={styles.emptyContainer}>
+                        <FontAwesomeIcon
+                            icon={faFaceSadTear}
+                            size={24}
+                            color="white"
+                        />
+                        <Text style={styles.emptyText}>
+                            You don't have any cats
+                        </Text>
+                    </View>
+                }
             />
 
             {message && (
@@ -290,13 +345,20 @@ const Cats: FC<CatsPageProps> = () => {
                     style={[
                         styles.alert,
                         {
-                            backgroundColor: message.variant === 'success' ? 'rgb(25, 135, 84)' : 'rgb(220, 53, 69)',
+                            backgroundColor:
+                                message.variant === 'success'
+                                    ? 'rgb(25, 135, 84)'
+                                    : 'rgb(220, 53, 69)',
                             opacity: isFadingOut ? 0 : 1,
                         },
                     ]}
                 >
                     <FontAwesomeIcon
-                        icon={message.variant === 'success' ? faCheck : faTriangleExclamation}
+                        icon={
+                            message.variant === 'success'
+                                ? faCheck
+                                : faTriangleExclamation
+                        }
                         color="white"
                     />
                     <Text style={styles.alertText}>{message.text}</Text>
@@ -320,19 +382,30 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 20,
     },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 64,
+    },
+    emptyText: {
+        color: 'white',
+        fontSize: 18,
+        marginTop: 8,
+    },
     filterContainer: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     mintButton: {
         backgroundColor: 'rgb(33, 37, 41)',
-        color: 'white'
+        color: 'white',
     },
     mintIcon: {
-        color: 'white'
+        color: 'white',
     },
     sortIcon: {
-        color: 'white'
+        color: 'white',
     },
     alert: {
         position: 'absolute',

@@ -1,17 +1,9 @@
 import React, { FC, useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
-    Alert,
-    ScrollView,
-} from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView } from 'react-native';
 import { Button } from 'react-native-paper';
 
-import { jwtDecode } from "jwt-decode";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
 import axios from 'axios';
 
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
@@ -23,7 +15,7 @@ import {
 import { emitUserLoggedInEvent } from '../events';
 import { API_URL } from '../config';
 
-interface LoginProps { }
+interface LoginProps {}
 
 const Login: FC<LoginProps> = () => {
     const [isLogin, setIsLogin] = useState(true);
@@ -31,7 +23,10 @@ const Login: FC<LoginProps> = () => {
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
     const [wallet, setWallet] = useState('');
-    const [message, setMessage] = useState<{ text: string; variant: string } | null>(null);
+    const [message, setMessage] = useState<{
+        text: string;
+        variant: string;
+    } | null>(null);
     const [isFadingOut, setIsFadingOut] = useState(false);
 
     const handleLogin = async () => {
@@ -40,19 +35,34 @@ const Login: FC<LoginProps> = () => {
             password: password,
         };
 
-        try {
-            const response = await axios.post(`${API_URL}/Auth/login`, loginData, {
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+        if (email == '' || password == '') {
+            setMessage({
+                text: 'You must fill in all fields.',
+                variant: 'danger',
             });
+            return;
+        }
+
+        try {
+            const response = await axios.post(
+                `${API_URL}/Auth/login`,
+                loginData,
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                },
+            );
 
             const { token } = response.data;
 
             await AsyncStorage.setItem('token', token);
 
             const decoded: any = jwtDecode(token);
-            const username = decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'];
+            const username =
+                decoded[
+                    'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'
+                ];
 
             emitUserLoggedInEvent(username);
 
@@ -75,12 +85,15 @@ const Login: FC<LoginProps> = () => {
                 walletAddress: wallet,
             });
 
-            setMessage({ text: 'Successfully registered!', variant: 'success' });
+            setMessage({
+                text: 'Successfully registered!',
+                variant: 'success',
+            });
 
-            setWallet("");
-            setUsername("");
-            setEmail("");
-            setPassword("");
+            setWallet('');
+            setUsername('');
+            setEmail('');
+            setPassword('');
         } catch (error) {
             setMessage({ text: 'Registration failed.', variant: 'danger' });
             console.error('Error during registration:', error);
@@ -174,12 +187,18 @@ const Login: FC<LoginProps> = () => {
                     </>
                 )}
 
-                <Button mode="contained" onPress={handleSubmit} style={styles.button}>
+                <Button
+                    mode="contained"
+                    onPress={handleSubmit}
+                    style={styles.button}
+                >
                     {isLogin ? 'Log in' : 'Create an account'}
                 </Button>
 
                 <Text style={styles.toggleText}>
-                    {isLogin ? "Don't have an account? " : 'Already have an account? '}
+                    {isLogin
+                        ? "Don't have an account? "
+                        : 'Already have an account? '}
                     <Text
                         style={styles.toggleLink}
                         onPress={() => setIsLogin(!isLogin)}
@@ -187,25 +206,31 @@ const Login: FC<LoginProps> = () => {
                         {isLogin ? 'Create one!' : 'Log in'}
                     </Text>
                 </Text>
-
-                {message && (
-                    <View
-                        style={[
-                            styles.alert,
-                            {
-                                backgroundColor: message.variant === 'success' ? 'rgb(25, 135, 84)' : 'rgb(220, 53, 69)',
-                                opacity: isFadingOut ? 0 : 1,
-                            },
-                        ]}
-                    >
-                        <FontAwesomeIcon
-                            icon={message.variant === 'success' ? faCheck : faTriangleExclamation}
-                            color="white"
-                        />
-                        <Text style={styles.alertText}>{message.text}</Text>
-                    </View>
-                )}
             </View>
+            {message && (
+                <View
+                    style={[
+                        styles.alert,
+                        {
+                            backgroundColor:
+                                message.variant === 'success'
+                                    ? 'rgb(25, 135, 84)'
+                                    : 'rgb(220, 53, 69)',
+                            opacity: isFadingOut ? 0 : 1,
+                        },
+                    ]}
+                >
+                    <FontAwesomeIcon
+                        icon={
+                            message.variant === 'success'
+                                ? faCheck
+                                : faTriangleExclamation
+                        }
+                        color="white"
+                    />
+                    <Text style={styles.alertText}>{message.text}</Text>
+                </View>
+            )}
         </ScrollView>
     );
 };
