@@ -8,7 +8,7 @@ import Web3 from "web3";
 import { jwtDecode } from "jwt-decode";
 
 import CONTRACT_ABI from '../../CatNFT.json';
-import config from '../../config.ts';
+import { GANACHE_URL, CONTRACT_ADDRESS } from '../../config.ts';
 
 import { Spinner, Pagination, Button, Form, InputGroup, Alert } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -66,8 +66,8 @@ const Market: FC<MarketProps> = () => {
       setLoading(true);
       try {
          const token = localStorage.getItem("token");
-         const web3 = new Web3(config.GANACHE_URL);
-         const contract = new web3.eth.Contract(CONTRACT_ABI.abi, config.CONTRACT_ADDRESS);
+         const web3 = new Web3(GANACHE_URL);
+         const contract = new web3.eth.Contract(CONTRACT_ABI.abi, CONTRACT_ADDRESS);
 
          let catIds;
 

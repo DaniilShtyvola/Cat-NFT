@@ -10,7 +10,7 @@ import Web3 from "web3";
 import { jwtDecode } from "jwt-decode";
 
 import CONTRACT_ABI from '../../CatNFT.json';
-import config from '../../config.ts';
+import { GANACHE_URL, CONTRACT_ADDRESS, CAT_API_KEY } from '../../config.ts';
 
 import { Spinner, Pagination, Button, InputGroup, Form, Alert } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -97,8 +97,8 @@ const CatsPage: FC<CatsPageProps> = () => {
             const decoded: any = jwtDecode(token);
             const WALLET_ADDRESS = decoded.WalletAddress;
 
-            const web3 = new Web3(config.GANACHE_URL);
-            const contract = new web3.eth.Contract(CONTRACT_ABI.abi, config.CONTRACT_ADDRESS);
+            const web3 = new Web3(GANACHE_URL);
+            const contract = new web3.eth.Contract(CONTRACT_ABI.abi, CONTRACT_ADDRESS);
 
             const catIds: number[] = await contract.methods.getCatsByOwner(WALLET_ADDRESS).call();
 
@@ -131,7 +131,7 @@ const CatsPage: FC<CatsPageProps> = () => {
 
       try {
          const response = await axios.get(
-            `https://api.thecatapi.com/v1/images/search?api_key=${config.CAT_API_KEY}&has_breeds=true`
+            `https://api.thecatapi.com/v1/images/search?api_key=${CAT_API_KEY}&has_breeds=true`
          );
 
          const generatedImageUrl = response.data[0].url;
@@ -150,8 +150,8 @@ const CatsPage: FC<CatsPageProps> = () => {
 
          const generatedCatName = `${formattedTemperament} ${formattedBreed}`;
 
-         const web3 = new Web3(config.GANACHE_URL);
-         const contract = new web3.eth.Contract(CONTRACT_ABI.abi, config.CONTRACT_ADDRESS);
+         const web3 = new Web3(GANACHE_URL);
+         const contract = new web3.eth.Contract(CONTRACT_ABI.abi, CONTRACT_ADDRESS);
 
          const transaction = contract.methods.createCat(generatedImageUrl, generatedCatName);
 

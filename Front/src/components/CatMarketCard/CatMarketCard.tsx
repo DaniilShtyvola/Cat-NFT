@@ -15,7 +15,7 @@ import { faEthereum } from '@fortawesome/free-brands-svg-icons'
 import { faCartShopping, faStar, faClock } from '@fortawesome/free-solid-svg-icons'
 
 import CONTRACT_ABI from '../../CatNFT.json';
-import config from '../../config.ts';
+import { GANACHE_URL, CONTRACT_ADDRESS } from '../../config.ts';
 
 interface CatMarketCardProps {
    cat: {
@@ -34,8 +34,8 @@ const CatMarketCard: FC<CatMarketCardProps> = ({ cat, walletAddress }) => {
    const [isForSale, setIsForSale] = useState(cat.isForSale);
    const [loading, setLoading] = useState(false);
 
-   const web3 = new Web3(config.GANACHE_URL);
-   const contract = new web3.eth.Contract(CONTRACT_ABI.abi, config.CONTRACT_ADDRESS);
+   const web3 = new Web3(GANACHE_URL);
+   const contract = new web3.eth.Contract(CONTRACT_ABI.abi, CONTRACT_ADDRESS);
 
    const weiToEther = (wei: bigint): number => {
       return Number(wei) / 1e18;

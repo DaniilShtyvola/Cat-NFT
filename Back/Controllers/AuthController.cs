@@ -85,7 +85,7 @@ namespace Controllers
                 UserName = "DanyaAdmin",
                 Email = email,
                 PasswordHash = HashPassword("Mh8ASf@6*"),
-                WalletAddress = "0x540c2ceF7f565fab894f1718dfFA888E5DF14e48",
+                WalletAddress = "0x10521FC57d9d03dda01A5024723128e3502128c8",
                 IsAdmin = true,
                 CreatedAt = DateTime.UtcNow
             };
@@ -148,7 +148,7 @@ namespace Controllers
             {
                 new Claim(ClaimTypes.Name, user.UserName),
                 new Claim("WalletAddress", user.WalletAddress),
-                new Claim("isAdmin", user.IsAdmin.ToString().ToLower()) // передаем isAdmin в токен
+                new Claim("isAdmin", user.IsAdmin.ToString().ToLower())
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:SecretKey"]));
@@ -162,6 +162,11 @@ namespace Controllers
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+        [HttpGet("test")]
+        public IActionResult Get()
+        {
+            return Ok("It's OK!");
         }
     }
 }

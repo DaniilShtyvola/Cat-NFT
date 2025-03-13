@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { Form, Button, Alert } from "react-bootstrap";
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-import config from '../../config.ts';
+import { API_URL } from '../../config.ts';
 
 interface LoginPageProps { }
 
@@ -34,7 +34,7 @@ const LoginPage: FC<LoginPageProps> = () => {
       };
 
       try {
-         const response = await axios.post(`${config.API_URL}/Auth/login`, loginData, {
+         const response = await axios.post(`${API_URL}/Auth/login`, loginData, {
             headers: {
                'Content-Type': 'application/json'
             }

@@ -16,7 +16,7 @@ import { faEthereum } from '@fortawesome/free-brands-svg-icons'
 import { faXmark, faCheck, faStar, faClock, faTag, faFire, faAngleUp, faAngleDown } from '@fortawesome/free-solid-svg-icons'
 
 import CONTRACT_ABI from '../../CatNFT.json';
-import config from '../../config.ts';
+import { GANACHE_URL, CONTRACT_ADDRESS } from '../../config.ts';
 
 interface CatCardProps {
    cat: {
@@ -38,8 +38,8 @@ const CatCard: FC<CatCardProps> = ({ cat, walletAddress }) => {
    const [isForSale, setIsForSale] = useState(cat.isForSale);
    const [loading, setLoading] = useState(false);
 
-   const web3 = new Web3(config.GANACHE_URL);
-   const contract = new web3.eth.Contract(CONTRACT_ABI.abi, config.CONTRACT_ADDRESS);
+   const web3 = new Web3(GANACHE_URL);
+   const contract = new web3.eth.Contract(CONTRACT_ABI.abi, CONTRACT_ADDRESS);
 
    const [editMenu, setEditMenu] = useState(false);
 
@@ -126,8 +126,8 @@ const CatCard: FC<CatCardProps> = ({ cat, walletAddress }) => {
       try {
          setLoading(true);
 
-         const web3 = new Web3(config.GANACHE_URL);
-         const contract = new web3.eth.Contract(CONTRACT_ABI.abi, config.CONTRACT_ADDRESS);
+         const web3 = new Web3(GANACHE_URL);
+         const contract = new web3.eth.Contract(CONTRACT_ABI.abi, CONTRACT_ADDRESS);
 
          const gasEstimate = await contract.methods.burnCat(cat.id).estimateGas({ from: walletAddress });
 
