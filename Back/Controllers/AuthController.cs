@@ -76,28 +76,6 @@ namespace Controllers
             return Ok(new { Message = isAdmin ? "Admin registered successfully." : "User registered successfully." });
         }
 
-        [HttpPost("create-admin")]
-        public async Task<IActionResult> CreateAdmin()
-        {
-            var email = "danya64@gmail.com";
-
-            var admin = new User
-            {
-                UserName = "DanyaAdmin",
-                Email = email,
-                PasswordHash = HashPassword("Mh8A0*"),
-                WalletAddress = "0x4C3956f913A5aED2F411d2Df9AB68D34ba825129",
-                IsAdmin = true,
-                CreatedAt = DateTime.UtcNow,
-                AvatarBase64 = ""
-            };
-
-            await _context.Users.AddAsync(admin);
-            await _context.SaveChangesAsync();
-
-            return Ok("Admin created successfully.");
-        }
-
         private bool IsAdmin(string token)
         {
             try

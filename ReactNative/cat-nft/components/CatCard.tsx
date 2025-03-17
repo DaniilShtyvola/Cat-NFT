@@ -25,7 +25,7 @@ import {
     faAngleDown,
 } from '@fortawesome/free-solid-svg-icons';
 
-import { emitShowMessage, emitCatPriceChanged } from '../events';
+import { emitShowMessage, emitCatPriceChanged, emitCatBurned } from '../events';
 import CONTRACT_ABI from '../contracts/CatNFT.json';
 import { GANACHE_URL, CONTRACT_ADDRESS } from '../config';
 
@@ -134,21 +134,25 @@ const CatCard: FC<CatCardProps> = ({ cat, walletAddress }) => {
         try {
             setLoading(true);
 
-            const gasEstimate = await contract.methods
+            const gasEstimate: bigint = await contract.methods
                 .burnCat(cat.id)
                 .estimateGas({ from: walletAddress });
 
+            const gasWithBuffer: bigint =
+                (gasEstimate * BigInt(120)) / BigInt(100);
+
             await contract.methods.burnCat(cat.id).send({
                 from: walletAddress,
-                gas: gasEstimate.toString(),
+                gas: gasWithBuffer.toString(),
             });
+
+            emitCatBurned();
         } catch (error) {
             console.error('Error burning cat:', error);
         } finally {
             setLoading(false);
         }
     };
-
     return (
         <Card
             style={[

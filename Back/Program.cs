@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,4 +42,46 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<MainDbContext>();
+
+    context.Database.Migrate();
+
+    if (!context.Users.Any())
+    {
+        var admin = new User
+        {
+            UserName = "DanyaAdmin",
+            Email = "danya64@gmail.com",
+            PasswordHash = HashPassword("Mh8A0*"),
+            WalletAddress = "0xe82aaB6c512C29779645D3870e14278d70607F67",
+            IsAdmin = true,
+            CreatedAt = DateTime.UtcNow,
+            AvatarBase64 = ""
+        };
+
+        context.Users.Add(admin);
+        context.SaveChanges();
+    }
+}
+
 app.Run();
+string HashPassword(string password)
+{
+    var salt = new byte[16];
+    using (var rng = RandomNumberGenerator.Create())
+    {
+        rng.GetBytes(salt);
+    }
+
+    var hashed = Convert.ToBase64String(KeyDerivation.Pbkdf2(
+        password: password,
+        salt: salt,
+        prf: KeyDerivationPrf.HMACSHA256,
+        iterationCount: 10000,
+        numBytesRequested: 32));
+
+    return $"{Convert.ToBase64String(salt)}:{hashed}";
+}

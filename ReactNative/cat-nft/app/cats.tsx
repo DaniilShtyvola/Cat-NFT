@@ -26,6 +26,16 @@ import { GANACHE_URL, CONTRACT_ADDRESS, CAT_API_KEY } from '../config';
 
 import CatCard from '../components/CatCard';
 
+interface Cat {
+    imageUrl: string;
+    name: string;
+    quality: number;
+    price: string;
+    isForSale: boolean;
+    owner: string;
+    creationTime: string;
+}
+
 interface CatsPageProps {}
 
 const Cats: FC<CatsPageProps> = () => {
@@ -77,14 +87,37 @@ const Cats: FC<CatsPageProps> = () => {
             setMessage({ text, variant });
         };
 
+        const handleBurnedCat = () => {
+            fetchCats();
+
+            setMessage({ text: 'NFT succesfully burned.', variant: 'success' });
+        };
+
+        const handlePriceChanged = () => {
+            fetchCats();
+
+            setMessage({
+                text: 'NFT price succesfully changed.',
+                variant: 'success',
+            });
+        };
+
         customEventEmitter.on(CustomEvents.SHOW_MESSAGE, showMessage);
-        customEventEmitter.on(CustomEvents.CAT_PRICE_CHANGED, fetchCats);
+        customEventEmitter.on(
+            CustomEvents.CAT_PRICE_CHANGED,
+            handlePriceChanged,
+        );
         customEventEmitter.on(CustomEvents.CAT_BOUGHT, fetchCats);
+        customEventEmitter.on(CustomEvents.CAT_BURNED, handleBurnedCat);
 
         return () => {
             customEventEmitter.off(CustomEvents.SHOW_MESSAGE, showMessage);
-            customEventEmitter.off(CustomEvents.CAT_PRICE_CHANGED, fetchCats);
+            customEventEmitter.off(
+                CustomEvents.CAT_PRICE_CHANGED,
+                handlePriceChanged,
+            );
             customEventEmitter.off(CustomEvents.CAT_BOUGHT, fetchCats);
+            customEventEmitter.off(CustomEvents.CAT_BURNED, handleBurnedCat);
         };
     }, []);
 
@@ -108,12 +141,19 @@ const Cats: FC<CatsPageProps> = () => {
 
                 const catsData = await Promise.all(
                     catIds.map(async (catId: number) => {
-                        const catData = await contract.methods
+                        const catData: Cat = await contract.methods
                             .cats(catId)
                             .call();
+
                         return {
                             id: catId,
-                            ...catData,
+                            imageUrl: catData.imageUrl,
+                            name: catData.name,
+                            quality: catData.quality,
+                            price: catData.price,
+                            isForSale: catData.isForSale,
+                            owner: catData.owner,
+                            creationTime: catData.creationTime,
                         };
                     }),
                 );
@@ -191,11 +231,24 @@ const Cats: FC<CatsPageProps> = () => {
                         from: walletAddress,
                         gas: gas.toString(),
                     });
-                } catch (error) {
-                    const errorMessage =
-                        (error as Error).message ||
-                        'An unknown error occurred.';
-                    setMessage({ text: errorMessage, variant: 'danger' });
+
+                    setMessage({
+                        text: 'NFT minted successfully!',
+                        variant: 'success',
+                    });
+
+                    fetchCats();
+                } catch (error: any) {
+                    if (error.message.includes('out of gas')) {
+                        setMessage({
+                            text: 'Runtime error, out of gas.',
+                            variant: 'danger',
+                        });
+                    } else {
+                        const errorMessage =
+                            (error as Error).message || 'Unknown error.';
+                        setMessage({ text: errorMessage, variant: 'danger' });
+                    }
                 }
             } else {
                 setMessage({
@@ -203,12 +256,6 @@ const Cats: FC<CatsPageProps> = () => {
                     variant: 'danger',
                 });
             }
-
-            setMessage({
-                text: 'NFT minted successfully!',
-                variant: 'success',
-            });
-            fetchCats();
         } catch (err) {
             setMessage({
                 text: 'Error during NFT minting.',

@@ -33,6 +33,8 @@ const Account: FC<AccountPageProps> = () => {
 
     const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [imageSizeInKB, setImageSizeInKB] = useState<number | null>(null);
+
     const [isEditingName, setIsEditingName] = useState(false);
     const [isEditingEmail, setIsEditingEmail] = useState(false);
 
@@ -207,6 +209,14 @@ const Account: FC<AccountPageProps> = () => {
         }
     };
 
+    useEffect(() => {
+        if (selectedImage) {
+            const sizeInBytes = selectedImage.length * (3 / 4);
+            const sizeInKB = sizeInBytes / 1024;
+            setImageSizeInKB(sizeInKB);
+        }
+    }, [selectedImage]);
+
     const handleUpdateAvatar = async () => {
         if (!selectedImage) return;
 
@@ -336,7 +346,10 @@ const Account: FC<AccountPageProps> = () => {
                                     source={{ uri: selectedImage }}
                                     style={styles.avatar}
                                 />
-                                <Text style={styles.label}>New avatar</Text>
+                                <Text style={styles.label}>
+                                    New avatar,{' '}
+                                    {imageSizeInKB?.toFixed(2) || ''}KB
+                                </Text>
                             </View>
                         )}
                     </View>

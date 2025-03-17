@@ -14,7 +14,7 @@ contract CatNFT {
 
     Cat[] public cats;
     mapping(uint256 => address) public catToOwner;
-    mapping(address => uint256[]) public ownerToCats;
+    mapping(address => mapping(uint256 => bool)) public ownerHasCat;
 
     address payable public owner;
     uint256 public constant MINT_PRICE = 0.0025 ether;
@@ -40,12 +40,7 @@ contract CatNFT {
     function createCat(string memory _imageUrl, string memory _name) public {
         uint256 randomValue = uint256(
             keccak256(
-                abi.encodePacked(
-                    block.timestamp,
-                    blockhash(block.number - 1),
-                    msg.sender,
-                    cats.length
-                )
+                abi.encodePacked(block.timestamp, msg.sender, cats.length)
             )
         ) % 100;
 
@@ -76,7 +71,7 @@ contract CatNFT {
         );
 
         catToOwner[catId] = msg.sender;
-        ownerToCats[msg.sender].push(catId);
+        ownerHasCat[msg.sender][catId] = true;
 
         emit CatCreated(
             catId,
@@ -126,24 +121,18 @@ contract CatNFT {
         require(msg.value >= cats[_catId].price, "Insufficient funds");
 
         address previousOwner = catToOwner[_catId];
+
+        require(previousOwner != msg.sender, "You already own this cat");
+
         catToOwner[_catId] = msg.sender;
         cats[_catId].isForSale = false;
         cats[_catId].owner = msg.sender;
 
-        uint256[] storage previousOwnerCats = ownerToCats[previousOwner];
-        for (uint256 i = 0; i < previousOwnerCats.length; i++) {
-            if (previousOwnerCats[i] == _catId) {
-                previousOwnerCats[i] = previousOwnerCats[
-                    previousOwnerCats.length - 1
-                ];
-                previousOwnerCats.pop();
-                break;
-            }
-        }
+        ownerHasCat[previousOwner][_catId] = false;
+        ownerHasCat[msg.sender][_catId] = true;
 
-        ownerToCats[msg.sender].push(_catId);
-
-        payable(previousOwner).transfer(msg.value);
+        (bool success, ) = payable(previousOwner).call{value: msg.value}("");
+        require(success, "Transfer failed");
 
         emit CatSold(_catId, msg.sender, msg.value);
     }
@@ -152,24 +141,26 @@ contract CatNFT {
         address _user
     ) public view returns (uint256[] memory) {
         uint256 totalCats = cats.length;
-        uint256[] memory tempCats = new uint256[](totalCats);
         uint256 count = 0;
 
         for (uint256 i = 0; i < totalCats; i++) {
-            if (_user == address(0)) {
-                if (cats[i].isForSale) {
-                    tempCats[count] = i;
-                    count++;
-                }
-            } else if (cats[i].isForSale && cats[i].owner != _user) {
-                tempCats[count] = i;
+            if (_user == address(0) && cats[i].isForSale) {
+                count++;
+            } else if (cats[i].isForSale && catToOwner[i] != _user) {
                 count++;
             }
         }
 
         uint256[] memory marketplaceCats = new uint256[](count);
-        for (uint256 i = 0; i < count; i++) {
-            marketplaceCats[i] = tempCats[i];
+        uint256 index = 0;
+        for (uint256 i = 0; i < totalCats; i++) {
+            if (_user == address(0) && cats[i].isForSale) {
+                marketplaceCats[index] = i;
+                index++;
+            } else if (cats[i].isForSale && catToOwner[i] != _user) {
+                marketplaceCats[index] = i;
+                index++;
+            }
         }
 
         return marketplaceCats;
@@ -178,39 +169,33 @@ contract CatNFT {
     function getCatsByOwner(
         address _owner
     ) public view returns (uint256[] memory) {
-        return ownerToCats[_owner];
-    }
+        uint256 totalCats = cats.length;
+        uint256 count = 0;
 
-    function burnCat(uint256 _catId) public {
-        require(
-            catToOwner[_catId] == msg.sender,
-            "You are not the owner of this cat"
-        );
-
-        address ownerOfCat = catToOwner[_catId];
-
-        uint256[] storage ownerCats = ownerToCats[ownerOfCat];
-
-        uint256 indexToRemove;
-        bool found = false;
-        for (uint256 i = 0; i < ownerCats.length; i++) {
-            if (ownerCats[i] == _catId) {
-                indexToRemove = i;
-                found = true;
-                break;
+        for (uint256 i = 0; i < totalCats; i++) {
+            if (ownerHasCat[_owner][i]) {
+                count++;
             }
         }
 
-        require(found, "Cat not found");
-
-        for (uint256 i = indexToRemove; i < ownerCats.length - 1; i++) {
-            ownerCats[i] = ownerCats[i + 1];
+        uint256[] memory ownerCats = new uint256[](count);
+        uint256 index = 0;
+        for (uint256 i = 0; i < totalCats; i++) {
+            if (ownerHasCat[_owner][i]) {
+                ownerCats[index] = i;
+                index++;
+            }
         }
 
-        ownerCats.pop();
+        return ownerCats;
+    }
 
-        delete cats[_catId];
+    function burnCat(uint256 _catId) public {
+        require(catToOwner[_catId] == msg.sender, "You are not the owner");
+        
+        ownerHasCat[msg.sender][_catId] = false;
         delete catToOwner[_catId];
+        delete cats[_catId];
 
         emit CatBurned(_catId);
     }
